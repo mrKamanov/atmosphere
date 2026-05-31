@@ -4,6 +4,17 @@
 
 Работает офлайн. Данные хранятся на телефоне, облака у приложения нет.
 
+<p align="center">
+  <img src="screenshots/7.jpeg" width="160" alt="" />
+  <img src="screenshots/1.jpeg" width="160" alt="" />
+  <img src="screenshots/4.jpeg" width="160" alt="" />
+  <img src="screenshots/3.jpeg" width="160" alt="" />
+  <br />
+  <img src="screenshots/2.jpeg" width="160" alt="" />
+  <img src="screenshots/6.jpeg" width="160" alt="" />
+  <img src="screenshots/5.jpeg" width="160" alt="" />
+</p>
+
 ---
 
 **Учитель.** Добавляете классы, учеников и расписание — вручную или из файла. На уроке открываете класс: на экране ученики, короткое нажатие — отметка, долгое — карточка с историей. Видно баланс за сегодня. Раз в неделю или месяц формируете отчёт и отправляете завучу через мессенджер или почту.
@@ -17,5 +28,7 @@
 ---
 
 Android 8+. Исходники: [GPL v3](LICENSE). Коммерческая лицензия — [отдельно](COMMERCIAL_LICENSE.md).
+
+
 
 Сергей Каманов
