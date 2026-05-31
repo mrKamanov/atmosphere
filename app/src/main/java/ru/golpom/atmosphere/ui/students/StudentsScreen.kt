@@ -75,6 +75,7 @@ import ru.golpom.atmosphere.data.local.entity.StudentEntity
 import ru.golpom.atmosphere.domain.student.StudentIdentity
 import ru.golpom.atmosphere.ui.importing.ImportFeedbackEffect
 import ru.golpom.atmosphere.ui.theme.AtmosphereDataLoadingBar
+import ru.golpom.atmosphere.ui.theme.fabListBottomPadding
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
 import ru.golpom.atmosphere.ui.theme.LessonGreen
@@ -267,7 +268,7 @@ fun StudentsScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f).padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp),
+                    contentPadding = fabListBottomPadding(),
                 ) {
                     items(students, key = { it.studentId }) { student ->
                         StudentCard(

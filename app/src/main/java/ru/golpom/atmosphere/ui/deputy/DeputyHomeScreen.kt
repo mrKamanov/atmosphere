@@ -69,6 +69,7 @@ import kotlinx.coroutines.launch
 import ru.golpom.atmosphere.data.export.deputy.DeputyAnalyticsReportExporter
 import ru.golpom.atmosphere.ui.export.rememberDeputyExportHandoff
 import ru.golpom.atmosphere.ui.importing.ImportFeedbackEffect
+import ru.golpom.atmosphere.ui.theme.NavigationBarScrollSpacer
 import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.AtmosphereDataLoadingBar
 import ru.golpom.atmosphere.ui.theme.AtmosphereInitialLoading
@@ -295,6 +296,7 @@ fun DeputyHomeScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+            NavigationBarScrollSpacer()
             }
             }
 

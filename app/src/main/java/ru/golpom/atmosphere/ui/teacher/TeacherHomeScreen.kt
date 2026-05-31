@@ -72,6 +72,7 @@ import ru.golpom.atmosphere.ui.notifications.NotificationsViewModel
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
 import ru.golpom.atmosphere.ui.theme.LessonGreen
+import ru.golpom.atmosphere.ui.theme.NavigationBarScrollSpacer
 import ru.golpom.atmosphere.ui.theme.PrimaryBlue
 import ru.golpom.atmosphere.ui.theme.SurfaceBg
 import ru.golpom.atmosphere.ui.theme.TextPrimary
@@ -192,6 +193,7 @@ fun TeacherHomeScreen(
                     nextMeeting = nextMeeting,
                 )
             }
+            NavigationBarScrollSpacer()
         }
     }
 
@@ -274,7 +276,7 @@ private fun ScheduleCard(onClick: () -> Unit, onOpenLesson: (classId: String, su
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
                 onClick = { nextLesson?.let { onOpenLesson(it.classId, it.subjectKey) } },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LessonGreen, contentColor = CardBg),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),

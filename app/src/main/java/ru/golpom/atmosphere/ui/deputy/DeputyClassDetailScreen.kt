@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -45,6 +46,7 @@ import ru.golpom.atmosphere.data.export.deputy.DeputyAnalyticsReportExporter
 import ru.golpom.atmosphere.data.local.model.StudentSubjectCell
 import ru.golpom.atmosphere.ui.export.rememberDeputyExportHandoff
 import ru.golpom.atmosphere.ui.lesson.subjectDisplayName
+import ru.golpom.atmosphere.ui.theme.listBottomPadding
 import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,7 +137,10 @@ fun DeputyClassDetailScreen(
                     if (analytics == null) {
                         Text("Нет данных", color = AtmosphereBrand.InkMuted, modifier = Modifier.padding(24.dp))
                     } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            contentPadding = listBottomPadding(24.dp),
+                        ) {
                             item {
                                 InsightAnalyticsPanel(
                                     title = "Класс ${analytics.classId}",
@@ -161,7 +166,7 @@ fun DeputyClassDetailScreen(
                                     },
                                 )
                             }
-                            item { Spacer(Modifier.padding(24.dp)) }
+                            item { Spacer(Modifier.padding(8.dp)) }
                         }
                     }
                 }
@@ -245,7 +250,7 @@ private fun ClassHeatmapContent(data: List<StudentSubjectCell>, subjects: List<S
         return
     }
     val students = data.map { it.studentId to "${it.lastName} ${it.firstName}" }.distinct().sortedBy { it.second }
-    LazyColumn {
+    LazyColumn(contentPadding = listBottomPadding(24.dp)) {
         item {
             DeputyReportSection(title = "Ученики и предметы") {
                 DeputyMatrixHeatmap(

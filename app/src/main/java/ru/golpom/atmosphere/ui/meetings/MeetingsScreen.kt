@@ -74,6 +74,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import ru.golpom.atmosphere.data.local.entity.MeetingEntity
+import ru.golpom.atmosphere.ui.theme.fabListBottomPadding
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
 import ru.golpom.atmosphere.ui.theme.LessonGreen
@@ -167,7 +168,7 @@ fun MeetingsScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 80.dp),
+                contentPadding = fabListBottomPadding(),
             ) {
                 item {
                     Card(

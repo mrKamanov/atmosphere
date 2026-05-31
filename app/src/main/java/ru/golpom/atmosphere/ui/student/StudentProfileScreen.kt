@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +69,7 @@ import ru.golpom.atmosphere.domain.behaviorTypeLabelRu
 import ru.golpom.atmosphere.ui.export.ExportPeriodDialog
 import ru.golpom.atmosphere.ui.export.rememberTeacherExportHandoff
 import ru.golpom.atmosphere.ui.lesson.subjectDisplayName
+import ru.golpom.atmosphere.ui.theme.listBottomPadding
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
 import ru.golpom.atmosphere.ui.theme.SurfaceBg
@@ -150,6 +152,7 @@ fun StudentProfileScreen(
                 .padding(padding)
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = listBottomPadding(),
         ) {
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -299,7 +302,7 @@ private fun LogEntryCard(entry: BehaviorLogEntity, onDelete: () -> Unit) {
             Box(
                 modifier = Modifier
                     .width(4.dp)
-                    .height(48.dp)
+                    .fillMaxHeight()
                     .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
                     .background(accentColor),
             )

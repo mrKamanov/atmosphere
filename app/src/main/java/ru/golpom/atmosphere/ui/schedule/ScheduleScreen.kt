@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -75,6 +76,7 @@ import ru.golpom.atmosphere.data.local.entity.ScheduleEntryEntity
 import ru.golpom.atmosphere.ui.importing.ImportFeedbackEffect
 import ru.golpom.atmosphere.ui.theme.AtmosphereDataLoadingBar
 import ru.golpom.atmosphere.domain.student.StudentIdentity
+import ru.golpom.atmosphere.ui.theme.fabListBottomPadding
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
 import ru.golpom.atmosphere.ui.theme.LessonGreen
@@ -273,7 +275,7 @@ fun ScheduleScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(36.dp)
+                            .heightIn(min = 36.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) LessonGreen else ChipBg)
                             .clickable { viewModel.selectDay(day) },
@@ -304,7 +306,7 @@ fun ScheduleScreen(
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp),
+                    contentPadding = fabListBottomPadding(),
                 ) {
                     items(dayEntries, key = { it.id }) { entry ->
                         ScheduleSlotCard(

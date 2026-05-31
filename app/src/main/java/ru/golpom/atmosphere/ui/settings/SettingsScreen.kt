@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -86,6 +88,7 @@ import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.SurfaceBg
 import ru.golpom.atmosphere.ui.theme.TextPrimary
+import ru.golpom.atmosphere.ui.theme.NavigationBarScrollSpacer
 import ru.golpom.atmosphere.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -375,7 +378,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
             Text(
                 text = "Политика конфиденциальности",
                 modifier = Modifier
@@ -387,6 +389,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 color = Color(0xFF2563EB),
                 textAlign = TextAlign.Center,
             )
+            NavigationBarScrollSpacer()
         }
     }
 
@@ -480,8 +483,11 @@ private fun ExportActionButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp),
         shape = RoundedCornerShape(14.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF2563EB).copy(alpha = 0.12f),
             contentColor = Color(0xFF2563EB),
@@ -491,9 +497,14 @@ private fun ExportActionButton(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.padding(end = 12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp)
                 if (description.isNotBlank()) {
-                    Text(description, fontSize = 11.sp, color = Color(0xFF2563EB).copy(alpha = 0.7f))
+                    Text(
+                        description,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        color = Color(0xFF2563EB).copy(alpha = 0.7f),
+                    )
                 }
             }
         }

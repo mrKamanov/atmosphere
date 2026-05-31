@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ru.golpom.atmosphere.data.local.model.LessonStudentRow
+import ru.golpom.atmosphere.ui.theme.listBottomPadding
 import ru.golpom.atmosphere.ui.theme.SurfaceBg
 import ru.golpom.atmosphere.ui.theme.TextPrimary
 import ru.golpom.atmosphere.ui.theme.TextSecondary
@@ -137,7 +138,7 @@ fun LessonScreen(
                         scaleY = gridScale
                         transformOrigin = TransformOrigin(0.5f, 0f)
                     },
-                contentPadding = PaddingValues(12.dp),
+                contentPadding = listBottomPadding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
