@@ -1,0 +1,39 @@
+# IDE и локальная машина
+*.iml
+.idea/
+.kotlin/
+local.properties
+.DS_Store
+
+# Сборка
+.gradle/
+build/
+app/build/
+*.apk
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+captures/
+.externalNativeBuild
+.cxx/
+build.log
+
+# Подпись и публикация в RuStore (только локально, не в git)
+release.keystore
+keystore.properties
+.keystore-pass.txt
+keystore.properties.example
+pepk/
+scripts/
+
+# Скриншоты для витрины RuStore (в README — screenshots/1–7.jpeg)
+screenshots/original/
+screenshots/rustore-9x16/
+screenshots/resize-for-rustore.ps1
+screenshots/README.md
+
+# Прочее
+deps.txt

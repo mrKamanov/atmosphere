@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Atmosphere" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/atmosphere_mist</item>
+        <item name="android:colorBackground">@color/atmosphere_mist</item>
+        <item name="android:statusBarColor">@color/atmosphere_mist</item>
+        <item name="android:navigationBarColor">@color/atmosphere_mist</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <style name="Theme.Atmosphere.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/atmosphere_mist</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_blank</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/atmosphere_mist</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="postSplashScreenTheme">@style/Theme.Atmosphere</item>
+        <item name="android:windowBackground">@color/atmosphere_mist</item>
+        <item name="android:statusBarColor">@color/atmosphere_mist</item>
+        <item name="android:navigationBarColor">@color/atmosphere_mist</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+</resources>
