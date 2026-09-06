@@ -279,7 +279,7 @@ private fun CalendarGrid(
     onDayClick: (LocalDate) -> Unit,
 ) {
     val dayLabels = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
-    val firstDayOfMonth = yearMonth.atDay(1).dayOfWeek.value % 7
+    val firstDayOfMonth = (yearMonth.atDay(1).dayOfWeek.value + 6) % 7
     val daysInMonth = yearMonth.lengthOfMonth()
     val today = LocalDate.now()
 

@@ -146,7 +146,7 @@ class StudentsViewModel @Inject constructor(
                     cursor?.use { if (it.moveToFirst()) it.getString(it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)) else null }
                 } ?: uri.lastPathSegment ?: ""
                 val classId = MySchoolStudentParser.extractClassId(fileName)
-                if (classId.isBlank()) return@withContext "Не удалось определить класс из имени файла"
+                if (classId.isBlank()) return@withContext "Не удалось определить класс из имени файла «$fileName». Переименуйте файл, включив в название номер и букву класса, например «9-Л», и попробуйте снова"
                 val parsed = MySchoolStudentParser.parse(input)
                 if (parsed.isEmpty()) return@withContext "Файл не содержит учеников"
                 val entities = StudentExcelParser.toEntities(

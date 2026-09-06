@@ -20,18 +20,30 @@ object MySchoolStudentParser {
         val errors: List<String> = emptyList(),
     )
 
-    private val classFromFilenameRegex = Regex("(\\d{1,2})\\s+([А-ЯЁ])\\s+\\d{4}")
+    private val classFromFilenameRegex = listOf(
+        // "География 9-Л 9", "9-А", "11-Ж 2025"
+        Regex("(\\d{1,2})\\s*[-–]\\s*([А-ЯЁа-яё])(?![А-ЯЁа-яё])"),
+        // "География 9 Л 2025-26_9ИЛМ классы.xlsx"
+        Regex("(\\d{1,2})\\s+([А-ЯЁа-яё])(?![А-ЯЁа-яё])\\s+\\d{1,4}"),
+        // "Русский 5Б 2024-25"
+        Regex("(\\d{1,2})\\s*([А-ЯЁа-яё])(?![А-ЯЁа-яё])\\s+\\d{1,4}[-–]\\d{1,4}"),
+        // "9Б класс"
+        Regex("(\\d{1,2})\\s*([А-ЯЁа-яё])(?![А-ЯЁа-яё])(?:\\s+класс)?"),
+    )
 
     /**
-     * Extracts classId from filename like "География 9 Л 2025-26_9ИЛМ классы.xlsx"
+     * Extracts classId from filename like "География 9-Л 9" or "География 9 Л 2025-26"
+     * or "Математика 9Л" or "9-А.xlsx"
      * Returns "9-Л" or empty string if not found.
      */
     fun extractClassId(filename: String): String {
-        val match = classFromFilenameRegex.find(filename)
-        if (match != null) {
-            val grade = match.groupValues[1]
-            val letter = match.groupValues[2]
-            return "$grade-$letter"
+        for (regex in classFromFilenameRegex) {
+            val match = regex.find(filename)
+            if (match != null) {
+                val grade = match.groupValues[1]
+                val letter = match.groupValues[2].uppercase()
+                return "$grade-$letter"
+            }
         }
         return ""
     }
