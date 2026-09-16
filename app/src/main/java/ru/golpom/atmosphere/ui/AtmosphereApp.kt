@@ -28,6 +28,7 @@ import ru.golpom.atmosphere.ui.navigation.navigateToHome
 import ru.golpom.atmosphere.ui.splash.SplashViewModel
 import ru.golpom.atmosphere.ui.student.StudentProfileScreen
 import ru.golpom.atmosphere.ui.settings.SettingsScreen
+import ru.golpom.atmosphere.ui.help.HelpScreen
 import ru.golpom.atmosphere.ui.classes.ClassDetailScreen
 import ru.golpom.atmosphere.ui.teacher.TeacherHomeScreen
 import ru.golpom.atmosphere.ui.theme.SurfaceBg
@@ -142,6 +143,7 @@ fun AtmosphereApp(
         composable(NavDestinations.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
+                onOpenHelp = { navController.navigate(NavDestinations.HELP) },
             )
         }
         composable(NavDestinations.TEACHER_SCHEDULE) {
@@ -193,6 +195,11 @@ fun AtmosphereApp(
         composable(NavDestinations.TEACHER_MEETINGS) {
             ru.golpom.atmosphere.ui.meetings.MeetingsScreen(
                 viewModel = hiltViewModel(),
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(NavDestinations.HELP) {
+            HelpScreen(
                 onBack = { navController.popBackStack() },
             )
         }

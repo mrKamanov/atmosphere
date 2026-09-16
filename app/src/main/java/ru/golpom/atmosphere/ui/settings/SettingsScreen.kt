@@ -4,6 +4,7 @@
  */
 package ru.golpom.atmosphere.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,7 +35,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.AlertDialog
@@ -39,9 +45,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -86,6 +91,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.golpom.atmosphere.ui.legal.openPrivacyPolicy
 import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.CardBg
+import ru.golpom.atmosphere.ui.theme.ChipBg
+import ru.golpom.atmosphere.ui.theme.LessonGreen
 import ru.golpom.atmosphere.ui.theme.SurfaceBg
 import ru.golpom.atmosphere.ui.theme.TextPrimary
 import ru.golpom.atmosphere.ui.theme.NavigationBarScrollSpacer
@@ -93,7 +100,7 @@ import ru.golpom.atmosphere.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
     val viewModel = hiltViewModel<SettingsViewModel>()
     var userName by remember { mutableStateOf("") }
     var teacherLastName by remember { mutableStateOf("") }
@@ -316,20 +323,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                                     .matchParentSize()
                                     .clickable { subjectMenuExpanded = true },
                             )
-                            DropdownMenu(
-                                expanded = subjectMenuExpanded,
-                                onDismissRequest = { subjectMenuExpanded = false },
-                            ) {
-                                teacherSubjects.forEach { key ->
-                                    DropdownMenuItem(
-                                        text = { Text(subjectDisplayName(key)) },
-                                        onClick = {
-                                            selectedSubjectKey = key
-                                            subjectMenuExpanded = false
-                                        },
-                                    )
-                                }
-                            }
                         }
                         ExportActionButton(
                             text = "Один предмет",
@@ -378,6 +371,38 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
+            SectionHeader("Справка")
+
+            SettingsCard {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenHelp() }
+                        .padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.padding(end = 16.dp),
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Как пользоваться приложением",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimary,
+                        )
+                        Text(
+                            "Классы, ученики, отметки, отчёты — пошаговые инструкции",
+                            fontSize = 12.sp,
+                            color = TextSecondary,
+                        )
+                    }
+                }
+            }
+
             Text(
                 text = "Политика конфиденциальности",
                 modifier = Modifier
@@ -391,6 +416,18 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
             NavigationBarScrollSpacer()
         }
+    }
+
+    if (subjectMenuExpanded) {
+        SubjectPickerDialog(
+            subjects = teacherSubjects,
+            selectedKey = selectedSubjectKey,
+            onSelect = { key ->
+                selectedSubjectKey = key
+                subjectMenuExpanded = false
+            },
+            onDismiss = { subjectMenuExpanded = false },
+        )
     }
 
     if (showClearScoresDialog) {
@@ -607,6 +644,61 @@ private fun DataActionRow(
             modifier = Modifier.padding(top = 2.dp),
         )
     }
+}
+
+@Composable
+private fun SubjectPickerDialog(
+    subjects: List<String>,
+    selectedKey: String?,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Выберите предмет", fontWeight = FontWeight.SemiBold) },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp),
+            ) {
+                items(subjects, key = { it }) { key ->
+                    val display = subjectDisplayName(key)
+                    val selected = key == selectedKey
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(key) }
+                            .background(if (selected) LessonGreen.copy(alpha = 0.1f) else Color.Transparent)
+                            .padding(vertical = 12.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            display,
+                            modifier = Modifier.weight(1f),
+                            fontSize = 15.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (selected) LessonGreen else TextPrimary,
+                        )
+                        if (selected) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = LessonGreen,
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = ChipBg)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        },
+    )
 }
 
 @Composable

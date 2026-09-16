@@ -166,7 +166,7 @@ fun ExportPeriodDialog(
                         }
                     }
                     val firstDay = currentMonth.withDayOfMonth(1)
-                    val startDow = firstDay.dayOfWeek.value % 7
+                    val startDow = (firstDay.dayOfWeek.value + 6) % 7
                     val daysInMonth = currentMonth.lengthOfMonth()
                     val rows = (startDow + daysInMonth + 6) / 7
                     Column {

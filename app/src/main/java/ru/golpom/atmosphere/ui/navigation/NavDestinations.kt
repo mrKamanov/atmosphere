@@ -19,6 +19,7 @@ object NavDestinations {
     const val TEACHER_STUDENTS = "teacher_students"
     const val TEACHER_MEETINGS = "teacher_meetings"
     const val DEPUTY_CLASS_DETAIL = "deputy_class_detail/{classId}"
+    const val HELP = "help"
 
     fun lesson(classId: String, subjectKey: String): String =
         "lesson/${URLEncoder.encode(classId, StandardCharsets.UTF_8.name())}/$subjectKey"
