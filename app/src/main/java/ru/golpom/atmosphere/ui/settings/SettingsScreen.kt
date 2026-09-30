@@ -76,7 +76,6 @@ import ru.golpom.atmosphere.ui.export.ExportSecurityDefaults
 import ru.golpom.atmosphere.ui.export.rememberTeacherExportHandoff
 import ru.golpom.atmosphere.ui.lesson.subjectDisplayName
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
@@ -159,7 +158,11 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
             TopAppBar(
                 title = { Text("Настройки", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        viewModel.setUserName(userName)
+                        viewModel.setTeacherLastName(teacherLastName)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = TextPrimary)
                     }
                 },
@@ -186,8 +189,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                         placeholder = { Text("Напр., Сергей Дмитриевич") },
                         singleLine = true,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { if (!it.isFocused) viewModel.setUserName(userName) },
+                            .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Text,
@@ -205,8 +207,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                         placeholder = { Text("Напр., Иванова") },
                         singleLine = true,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { if (!it.isFocused) viewModel.setTeacherLastName(teacherLastName) },
+                            .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Text,
@@ -214,7 +215,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
-                                viewModel.setTeacherLastName(teacherLastName)
                                 focusManager.clearFocus()
                             },
                         ),
@@ -223,6 +223,23 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                             unfocusedBorderColor = Color(0xFFE5E7EB),
                         ),
                     )
+                    Button(
+                        onClick = {
+                            viewModel.setUserName(userName)
+                            viewModel.setTeacherLastName(teacherLastName)
+                            focusManager.clearFocus()
+                            scope.launch { snackbarHostState.showSnackbar("Сохранено") }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2563EB),
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                    ) {
+                        Text("Сохранить", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    }
                     Text(
                         "Завуч увидит эту фамилию внутри отчёта. В имени файла фамилия не указывается.",
                         fontSize = 12.sp,
