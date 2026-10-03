@@ -27,6 +27,8 @@ import ru.golpom.atmosphere.data.local.entity.StudentEntity
 import ru.golpom.atmosphere.data.excel.MySchoolStudentParser
 import ru.golpom.atmosphere.data.excel.StudentExcelParser
 import ru.golpom.atmosphere.data.repository.CatalogRepository
+import ru.golpom.atmosphere.domain.BehaviorPreset
+import ru.golpom.atmosphere.domain.SubjectKeys
 import ru.golpom.atmosphere.domain.student.StudentIdentity
 
 enum class StudentFilter { ACTIVE, ARCHIVED, ALL }
@@ -105,6 +107,24 @@ class StudentsViewModel @Inject constructor(
         viewModelScope.launch {
             catalogRepository.restoreStudent(studentId)
             _userMessage.value = "Ученик восстановлен"
+        }
+    }
+
+    /**
+     * Нарушение дисциплины вне урока (перемена, коридор).
+     * Тип события — обычный [ru.golpom.atmosphere.domain.BehaviorPreset.DISRUPTION],
+     * но предмет не заполняется: запись уходит в [SubjectKeys.OUTSIDE_LESSON].
+     */
+    fun logOutsideLessonViolation(studentId: String, classId: String) {
+        viewModelScope.launch {
+            catalogRepository.logBehavior(
+                studentId = studentId,
+                classId = classId,
+                subjectKey = SubjectKeys.OUTSIDE_LESSON,
+                behaviorType = BehaviorPreset.DISRUPTION.behaviorType,
+                scoreImpact = BehaviorPreset.DISRUPTION.scoreImpact,
+            )
+            _userMessage.value = "Нарушение вне урока: −1"
         }
     }
 

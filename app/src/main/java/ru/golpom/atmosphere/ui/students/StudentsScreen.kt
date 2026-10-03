@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Unarchive
@@ -75,6 +77,7 @@ import ru.golpom.atmosphere.data.local.entity.StudentEntity
 import ru.golpom.atmosphere.domain.student.StudentIdentity
 import ru.golpom.atmosphere.ui.importing.ImportFeedbackEffect
 import ru.golpom.atmosphere.ui.theme.AtmosphereDataLoadingBar
+import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.fabListBottomPadding
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
@@ -279,6 +282,9 @@ fun StudentsScreen(
                             onArchive = { viewModel.archiveStudent(student.studentId) },
                             onHardDelete = { viewModel.hardDeleteStudent(student.studentId) },
                             onRestore = { viewModel.restoreStudent(student.studentId) },
+                            onMarkOutsideLesson = {
+                                viewModel.logOutsideLessonViolation(student.studentId, student.classId)
+                            },
                             classIds = classes.map { it.classId },
                         )
                     }
@@ -305,6 +311,7 @@ private fun StudentCard(
     onArchive: () -> Unit,
     onHardDelete: () -> Unit,
     onRestore: () -> Unit,
+    onMarkOutsideLesson: () -> Unit,
     classIds: List<String>,
 ) {
     var showMoveDialog by remember { mutableStateOf(false) }
@@ -388,11 +395,24 @@ private fun StudentCard(
                     Icon(Icons.Default.DeleteForever, contentDescription = "Удалить навсегда", modifier = Modifier.size(20.dp), tint = TextSecondary.copy(alpha = 0.5f))
                 }
             } else {
+                IconButton(onClick = onMarkOutsideLesson) {
+                    Icon(
+                        Icons.Default.ReportProblem,
+                        contentDescription = "Отметить нарушение вне урока",
+                        modifier = Modifier.size(20.dp),
+                        tint = AtmosphereBrand.NegativeDeep,
+                    )
+                }
+                IconButton(onClick = { showMoveDialog = true }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.DriveFileMove,
+                        contentDescription = "Перевести в другой класс",
+                        modifier = Modifier.size(20.dp),
+                        tint = LessonGreen,
+                    )
+                }
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(Icons.Default.Delete, contentDescription = "Удалить", modifier = Modifier.size(20.dp), tint = TextSecondary.copy(alpha = 0.5f))
-                }
-                TextButton(onClick = { showMoveDialog = true }) {
-                    Text("Перевести", fontSize = 13.sp, color = LessonGreen)
                 }
             }
         }
