@@ -39,6 +39,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import ru.golpom.atmosphere.data.local.entity.ImportBatchEntity
+import ru.golpom.atmosphere.domain.countRu
 import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.TextPrimary
@@ -237,7 +238,7 @@ private fun TeacherReportCard(
         subtitle = buildString {
             append(batch.periodLabel)
             append(" · ")
-            append("${batch.insertedCount} отметок · загружено $importedAtLabel")
+            append("${countRu(batch.insertedCount, "отметка", "отметки", "отметок")} · загружено $importedAtLabel")
         },
         enabled = batch.enabled,
         onToggle = { onToggleEnabled(batch.batchId, it) },

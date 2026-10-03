@@ -191,6 +191,7 @@ interface BehaviorLogDao {
         WHERE l.timestamp >= :fromMillis AND l.timestamp < :toMillis
           AND (:includeLocal = 1 OR l.import_batch_id IS NOT NULL)
         GROUP BY l.student_id
+        HAVING totalScore > 0
         ORDER BY totalScore DESC
     """)
     suspend fun studentScoresInRange(fromMillis: Long, toMillis: Long, includeLocal: Boolean): List<StudentSubjectScore>
@@ -267,11 +268,12 @@ interface BehaviorLogDao {
     @Query("""
         SELECT s.student_id AS studentId, COALESCE(SUM(l.score_impact), 0) AS totalScore
         FROM students s
-        LEFT JOIN behavior_logs_visible l ON l.student_id = s.student_id
+        JOIN behavior_logs_visible l ON l.student_id = s.student_id
             AND l.timestamp >= :fromMillis AND l.timestamp < :toMillis
             AND (:includeLocal = 1 OR l.import_batch_id IS NOT NULL)
         WHERE s.class_id = :classId AND s.status = 'ACTIVE'
         GROUP BY s.student_id
+        HAVING totalScore > 0
         ORDER BY totalScore DESC
     """)
     suspend fun classStudentScoresInRange(classId: String, fromMillis: Long, toMillis: Long, includeLocal: Boolean): List<StudentSubjectScore>
@@ -279,11 +281,12 @@ interface BehaviorLogDao {
     @Query("""
         SELECT s.student_id AS studentId, COALESCE(SUM(l.score_impact), 0) AS totalScore
         FROM students s
-        LEFT JOIN behavior_logs_visible l ON l.student_id = s.student_id
+        JOIN behavior_logs_visible l ON l.student_id = s.student_id
             AND l.timestamp >= :fromMillis AND l.timestamp < :toMillis AND l.score_impact < 0
             AND (:includeLocal = 1 OR l.import_batch_id IS NOT NULL)
         WHERE s.class_id = :classId AND s.status = 'ACTIVE'
         GROUP BY s.student_id
+        HAVING totalScore < 0
         ORDER BY totalScore ASC
     """)
     suspend fun classStudentNegativeScoresInRange(classId: String, fromMillis: Long, toMillis: Long, includeLocal: Boolean): List<StudentSubjectScore>

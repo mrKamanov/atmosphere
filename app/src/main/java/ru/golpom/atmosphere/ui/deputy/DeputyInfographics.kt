@@ -196,15 +196,17 @@ fun TrendAnalyticsPanel(trend: TrendAnalytics, modifier: Modifier = Modifier) {
             CalloutChip("Дней +", "${trend.positiveDays}", AtmosphereBrand.Positive)
             CalloutChip("Дней −", "${trend.negativeDays}", AtmosphereBrand.Negative)
         }
-        trend.best?.let { best ->
-            trend.worst?.let { worst ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (trend.best != null || trend.worst != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                trend.best?.let { best ->
                     CalloutChip(
                         "Пик ↑ ${dateFmt.format(LocalDate.ofEpochDay(best.day))}",
                         atmosphereFormatSigned(best.score),
                         AtmosphereBrand.Positive,
                         Modifier.weight(1f),
                     )
+                }
+                trend.worst?.let { worst ->
                     CalloutChip(
                         "Пик ↓ ${dateFmt.format(LocalDate.ofEpochDay(worst.day))}",
                         atmosphereFormatSigned(worst.score),

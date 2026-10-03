@@ -8,6 +8,7 @@ import ru.golpom.atmosphere.data.local.model.StudentSubjectCell
 import ru.golpom.atmosphere.ui.deputy.ClassAnalytics
 import ru.golpom.atmosphere.ui.deputy.StudentRankingRow
 import ru.golpom.atmosphere.domain.WeekdayLabelsRu
+import ru.golpom.atmosphere.domain.studentsRu
 
 object DeputyClassReportHtml {
 
@@ -18,14 +19,14 @@ object DeputyClassReportHtml {
         mode: ReportRenderMode = ReportRenderMode.SCREEN,
     ): String {
         val title = "Класс ${analytics.classId}"
-        val meta = "${analytics.activeStudentCount} учеников · ${analytics.periodLabel}"
+        val meta = "${studentsRu(analytics.activeStudentCount)} · ${analytics.periodLabel}"
         val body = buildString {
             append(
                 DeputyAnalyticsHtml.titlePage(
                     level = "Класс",
                     headline = analytics.classId,
                     periodLabel = analytics.periodLabel,
-                    details = listOf("${analytics.activeStudentCount} учеников"),
+                    details = listOf(studentsRu(analytics.activeStudentCount)),
                 ),
             )
             append("""<div class="content">""")

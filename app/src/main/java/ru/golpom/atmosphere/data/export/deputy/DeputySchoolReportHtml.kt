@@ -9,6 +9,7 @@ import ru.golpom.atmosphere.ui.deputy.DeputyDashboardSnapshot
 import ru.golpom.atmosphere.ui.deputy.ExecutiveBriefPoint
 import ru.golpom.atmosphere.ui.deputy.HeatmapMatrix
 import ru.golpom.atmosphere.ui.deputy.StudentRankingRow
+import ru.golpom.atmosphere.domain.studentsRu
 
 object DeputySchoolReportHtml {
 
@@ -22,7 +23,7 @@ object DeputySchoolReportHtml {
                     periodLabel = periodLabel,
                     details = listOf(
                         "${summary.classCount} классов",
-                        "${summary.studentCount} учеников",
+                        "${studentsRu(summary.studentCount)}",
                     ),
                 ),
             )

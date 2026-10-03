@@ -26,6 +26,7 @@ import ru.golpom.atmosphere.data.local.entity.ImportBatchEntity
 import ru.golpom.atmosphere.data.preferences.UserPreferencesRepository
 import ru.golpom.atmosphere.data.repository.CatalogRepository
 import ru.golpom.atmosphere.domain.AppRole
+import ru.golpom.atmosphere.domain.countRu
 import ru.golpom.atmosphere.ui.navigation.NavDestinations
 
 @HiltViewModel
@@ -292,8 +293,8 @@ class DeputyHomeViewModel @Inject constructor(
             stats: BehaviorLogImportStats,
             parseWarnings: Int,
         ): String = buildString {
-            append("$teacherLabel: добавлено ${stats.inserted} отметок")
-            if (stats.studentsCreated > 0) append(", новых учеников ${stats.studentsCreated}")
+            append("$teacherLabel: добавлено ${countRu(stats.inserted, "отметка", "отметки", "отметок")}")
+            if (stats.studentsCreated > 0) append(", новых учеников: ${stats.studentsCreated}")
             if (stats.skippedUnknownStudent > 0) {
                 append(", не найдено учеников — ${stats.skippedUnknownStudent}")
             }

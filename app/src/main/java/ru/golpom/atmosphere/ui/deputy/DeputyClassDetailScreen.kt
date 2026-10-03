@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.golpom.atmosphere.data.export.deputy.DeputyAnalyticsReportExporter
 import ru.golpom.atmosphere.data.local.model.StudentSubjectCell
+import ru.golpom.atmosphere.domain.studentsRu
 import ru.golpom.atmosphere.ui.export.rememberDeputyExportHandoff
 import ru.golpom.atmosphere.ui.lesson.subjectDisplayName
 import ru.golpom.atmosphere.ui.theme.listBottomPadding
@@ -144,7 +145,7 @@ fun DeputyClassDetailScreen(
                             item {
                                 InsightAnalyticsPanel(
                                     title = "Класс ${analytics.classId}",
-                                    subtitle = "${analytics.activeStudentCount} учеников",
+                                    subtitle = studentsRu(analytics.activeStudentCount),
                                     totalScore = analytics.totalScore,
                                     periodLabel = analytics.periodLabel,
                                     periodType = state.periodConfig.type,

@@ -9,6 +9,7 @@ import ru.golpom.atmosphere.data.local.model.DailyScore
 import ru.golpom.atmosphere.data.local.model.DayOfWeekScore
 import ru.golpom.atmosphere.data.local.model.HeatmapCell
 import ru.golpom.atmosphere.domain.WeekdayLabelsRu
+import ru.golpom.atmosphere.domain.countRu
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -137,8 +138,8 @@ private fun DeputyStats.toTrendAnalytics(): TrendAnalytics {
         points = sorted,
         total = total,
         average = avg,
-        best = sorted.maxByOrNull { it.score },
-        worst = sorted.minByOrNull { it.score },
+        best = sorted.maxByOrNull { it.score }?.takeIf { it.score > 0 },
+        worst = sorted.minByOrNull { it.score }?.takeIf { it.score < 0 },
         positiveDays = sorted.count { it.score > 0 },
         negativeDays = sorted.count { it.score < 0 },
     )
@@ -257,7 +258,9 @@ private fun DeputyStats.toExecutiveBrief(): List<ExecutiveBriefPoint> {
             ExecutiveBriefPoint(
                 n++,
                 "Итог за период",
-                "Зафиксировано $events отметок: поощрений $totalPositive, нарушений $negAbs. " +
+                "Зафиксировано ${countRu(events, "отметка", "отметки", "отметок")}: " +
+                    "${countRu(totalPositive, "поощрение", "поощрения", "поощрений")}, " +
+                    "${countRu(negAbs, "нарушение", "нарушения", "нарушений")}. " +
                     "Сводный баланс ${deputyFormatSigned(totalScore)}.",
                 deputyFormatSigned(totalScore),
                 tone,
@@ -265,7 +268,7 @@ private fun DeputyStats.toExecutiveBrief(): List<ExecutiveBriefPoint> {
         )
     }
 
-    classScores.maxByOrNull { it.score }?.let { best ->
+    classScores.maxByOrNull { it.score }?.takeIf { it.score > 0 }?.let { best ->
         points.add(
             ExecutiveBriefPoint(
                 n++,
