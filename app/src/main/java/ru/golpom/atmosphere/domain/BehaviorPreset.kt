@@ -16,7 +16,26 @@ enum class BehaviorPreset(
     DISRUPTION("disruption", -1, "Срыв дисциплины"),
     GADGET("gadget", -1, "Гаджет на уроке"),
     LATE("late", -1, "Опоздание"),
-    UNPREPARED("unprepared", -1, "Не готов"),
+    UNPREPARED("unprepared", -1, "Без подготовки"),
     FIGHT("fight", -1, "Драка"),
     PROFANITY("profanity", -1, "Ненормативная лексика"),
+    CHITCHAT("chitchat", -1, "Разговаривает"),
+    INTERRUPTS("interrupts", -1, "Перебивает"),
+    CHEATING("cheating", -1, "Списывает"),
+    FORGOT_GEAR("forgot_gear", -1, "Забыл(а)"),
+    NO_UNIFORM("no_uniform", -1, "Без формы"),
+    PROPERTY_DAMAGE("property_damage", -1, "Портит имущество"),
 }
+
+/**
+ * Типы, для которых в аналитике завучa нет отдельного пункта:
+ * они собираются в сводное замечание «Замечания по поведению».
+ */
+val RoutineBehaviorTypes: List<String> = listOf(
+    BehaviorPreset.CHITCHAT,
+    BehaviorPreset.INTERRUPTS,
+    BehaviorPreset.CHEATING,
+    BehaviorPreset.FORGOT_GEAR,
+    BehaviorPreset.NO_UNIFORM,
+    BehaviorPreset.PROPERTY_DAMAGE,
+).map { it.behaviorType }

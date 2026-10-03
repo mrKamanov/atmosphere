@@ -6,6 +6,7 @@ package ru.golpom.atmosphere.ui.lesson
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,18 +18,27 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.golpom.atmosphere.domain.BehaviorPreset
@@ -60,7 +71,7 @@ private data class PresetInfo(
 private fun presetStyle(preset: BehaviorPreset): PresetInfo = when (preset) {
     BehaviorPreset.ACTIVE_WORK -> PresetInfo(Icons.Default.ThumbUp, GreenBg, GreenText)
     BehaviorPreset.CLASS_HELP -> PresetInfo(Icons.Default.Groups, GreenBg, GreenText)
-    BehaviorPreset.FOCUS -> PresetInfo(Icons.Default.TrendingUp, GreenBg, GreenText)
+    BehaviorPreset.FOCUS -> PresetInfo(Icons.AutoMirrored.Filled.TrendingUp, GreenBg, GreenText)
     BehaviorPreset.EXEMPLARY_BEHAVIOR -> PresetInfo(Icons.Default.Favorite, GreenBg, GreenText)
     BehaviorPreset.DISRUPTION -> PresetInfo(Icons.Default.Bolt, RedBg, RedText)
     BehaviorPreset.GADGET -> PresetInfo(Icons.Default.Warning, RedBg, RedText)
@@ -68,6 +79,12 @@ private fun presetStyle(preset: BehaviorPreset): PresetInfo = when (preset) {
     BehaviorPreset.UNPREPARED -> PresetInfo(Icons.Default.Book, RedBg, RedText)
     BehaviorPreset.FIGHT -> PresetInfo(Icons.Default.PriorityHigh, RedBg, RedText)
     BehaviorPreset.PROFANITY -> PresetInfo(Icons.Default.Block, RedBg, RedText)
+    BehaviorPreset.CHITCHAT -> PresetInfo(Icons.AutoMirrored.Filled.Chat, RedBg, RedText)
+    BehaviorPreset.INTERRUPTS -> PresetInfo(Icons.AutoMirrored.Filled.VolumeUp, RedBg, RedText)
+    BehaviorPreset.CHEATING -> PresetInfo(Icons.Default.ContentCopy, RedBg, RedText)
+    BehaviorPreset.FORGOT_GEAR -> PresetInfo(Icons.AutoMirrored.Filled.HelpOutline, RedBg, RedText)
+    BehaviorPreset.NO_UNIFORM -> PresetInfo(Icons.Default.Checkroom, RedBg, RedText)
+    BehaviorPreset.PROPERTY_DAMAGE -> PresetInfo(Icons.Default.WarningAmber, RedBg, RedText)
 }
 
 private fun presetShortLabel(preset: BehaviorPreset): String = when (preset) {
@@ -77,10 +94,16 @@ private fun presetShortLabel(preset: BehaviorPreset): String = when (preset) {
     BehaviorPreset.EXEMPLARY_BEHAVIOR -> "Поведение"
     BehaviorPreset.DISRUPTION -> "Срыв"
     BehaviorPreset.GADGET -> "Гаджет"
-    BehaviorPreset.LATE -> "Опоздал"
-    BehaviorPreset.UNPREPARED -> "Не готов"
+    BehaviorPreset.LATE -> "Опоздание"
+    BehaviorPreset.UNPREPARED -> "Без подготовки"
     BehaviorPreset.FIGHT -> "Драка"
     BehaviorPreset.PROFANITY -> "Лексика"
+    BehaviorPreset.CHITCHAT -> "Разговаривает"
+    BehaviorPreset.INTERRUPTS -> "Перебивает"
+    BehaviorPreset.CHEATING -> "Списывает"
+    BehaviorPreset.FORGOT_GEAR -> "Забыл(а)"
+    BehaviorPreset.NO_UNIFORM -> "Без формы"
+    BehaviorPreset.PROPERTY_DAMAGE -> "Портит"
 }
 
 private fun presetHint(preset: BehaviorPreset): String? = when (preset) {
@@ -97,13 +120,27 @@ private val positivePresets = listOf(
 )
 
 private val negativePresets = listOf(
+    BehaviorPreset.CHITCHAT,
+    BehaviorPreset.INTERRUPTS,
+    BehaviorPreset.CHEATING,
+    BehaviorPreset.FORGOT_GEAR,
+    BehaviorPreset.NO_UNIFORM,
     BehaviorPreset.DISRUPTION,
     BehaviorPreset.GADGET,
     BehaviorPreset.LATE,
     BehaviorPreset.UNPREPARED,
+    BehaviorPreset.PROPERTY_DAMAGE,
     BehaviorPreset.FIGHT,
     BehaviorPreset.PROFANITY,
 )
+
+/**
+ * Отрицательные отметки показываются двумя рядами по [negativesPerScrollRow] штук,
+ * каждый со своим горизонтальным скроллом: карточки остаются крупными,
+ * а листать нужно вдвое меньше, чем по одной общей полосе.
+ */
+private const val negativesPerScrollRow = 6
+private val negativeCardWidth = 152.dp
 
 @Composable
 fun LessonQuickActionsSheet(
@@ -114,6 +151,7 @@ fun LessonQuickActionsSheet(
     Column(
         Modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
             .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
     ) {
@@ -148,17 +186,25 @@ fun LessonQuickActionsSheet(
         Spacer(Modifier.height(8.dp))
         Text("Отрицательные", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = RedText)
         Spacer(Modifier.height(8.dp))
-        negativePresets.chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { preset ->
-                    CompactPresetCard(
-                        preset = preset,
-                        onClick = { onPick(preset) },
-                        modifier = Modifier.weight(1f),
-                    )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+        ) {
+            Column {
+                negativePresets.chunked(negativesPerScrollRow).forEach { rowItems ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        rowItems.forEach { preset ->
+                            CompactPresetCard(
+                                preset = preset,
+                                onClick = { onPick(preset) },
+                                modifier = Modifier.width(negativeCardWidth),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
 }
@@ -194,6 +240,8 @@ private fun CompactPresetCard(preset: BehaviorPreset, onClick: () -> Unit, modif
                 fontWeight = FontWeight.Medium,
                 color = style.textColor,
                 textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 hint ?: " ",

@@ -4,18 +4,15 @@
  */
 package ru.golpom.atmosphere.domain
 
+/**
+ * Подпись типа поведения. Основные типы берутся из [BehaviorPreset],
+ * поэтому подписи нельзя дублировать здесь — они разъезжаются с пресетами.
+ */
 fun behaviorTypeLabelRu(key: String): String =
     BehaviorPreset.entries.find { it.behaviorType == key }?.labelRu
         ?: when (key) {
-            "active_work" -> "Старается"
-            "active_help" -> "Помощь классу"
-            "focus" -> "Прогресс"
-            "exemplary_behavior" -> "Примерное поведение"
-            "disruption" -> "Срыв дисциплины"
-            "gadget" -> "Гаджет на уроке"
-            "late" -> "Опоздание"
-            "unprepared" -> "Не готов к уроку"
-            "fight" -> "Драка"
-            "profanity" -> "Ненормативная лексика"
+            // Типы из диалога массовой оценки в уведомлениях (GradePromptDialog).
+            "praise" -> "Поощрение"
+            "misconduct" -> "Нарушение дисциплины"
             else -> key
         }
