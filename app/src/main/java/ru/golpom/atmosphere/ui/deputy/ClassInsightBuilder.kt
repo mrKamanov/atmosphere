@@ -11,7 +11,11 @@ import ru.golpom.atmosphere.data.local.entity.BehaviorLogEntity
 import ru.golpom.atmosphere.data.local.entity.StudentEntity
 import ru.golpom.atmosphere.data.local.model.DailyScore
 import ru.golpom.atmosphere.domain.WeekdayLabelsRu
+import ru.golpom.atmosphere.domain.RoutineBehaviorTypes
 import ru.golpom.atmosphere.domain.behaviorTypeLabelRu
+import ru.golpom.atmosphere.domain.countRu
+import ru.golpom.atmosphere.domain.studentsGenitiveRu
+import ru.golpom.atmosphere.domain.studentsRu
 import ru.golpom.atmosphere.ui.lesson.parseSubjectLabel
 import ru.golpom.atmosphere.ui.lesson.subjectTitleGenitive
 import ru.golpom.atmosphere.ui.lesson.subjectTitlePrepositional
@@ -85,7 +89,8 @@ object ClassInsightBuilder {
             ?.let { (key, list) ->
                 val subj = subjectTitlePrepositional(parseSubjectLabel(key).title)
                 points.add(
-                    "Не готовы к урокам: чаще по $subj (${list.size} отметок по классу)." +
+                    "Не готовы к урокам: чаще по $subj " +
+                        "(${countRu(list.size, "отметка", "отметки", "отметок")} по классу)." +
                         if (unpreparedStudents.isNotBlank()) " Лидеры: $unpreparedStudents." else "",
                 )
             }
@@ -113,10 +118,28 @@ object ClassInsightBuilder {
             .forEach { (sid, n) ->
                 if (n >= 3) {
                     points.add(
-                        "Индивидуально: ${names[sid] ?: "ученик"} — $n нарушений за период. " +
+                        "Индивидуально: ${names[sid] ?: "ученик"} — " +
+                            "${countRu(n, "нарушение", "нарушения", "нарушений")} за период. " +
                             "Запланировать беседу с родителями.",
                     )
                 }
+            }
+
+        negatives.filter { it.behaviorType in RoutineBehaviorTypes }
+            .takeIf { it.isNotEmpty() }
+            ?.let { routine ->
+                val byType = routine.groupingBy { it.behaviorType }.eachCount()
+                    .entries
+                    .sortedByDescending { it.value }
+                val detail = byType.joinToString(", ") { (type, n) ->
+                    "${behaviorTypeLabelRu(type)} — ${countRu(n, "раз", "раза", "раз")}"
+                }
+                val leaders = routine.groupingBy { it.studentId }.eachCount()
+                    .entries
+                    .sortedByDescending { it.value }
+                    .take(3)
+                    .joinToString(", ") { (sid, n) -> "${names[sid] ?: "ученик"} ($n)" }
+                points.add("Замечания по поведению: $detail. Чаще: $leaders.")
             }
 
         base.subjectProblems.firstOrNull()?.let { p ->
@@ -132,7 +155,9 @@ object ClassInsightBuilder {
             ?.takeIf { it.value >= 3 }
             ?.let { (sid, n) ->
                 points.add(
-                    "Опора класса: ${names[sid] ?: "ученик"} — $n поощрений. Можно выделить на линейке.",
+                    "Опора класса: ${names[sid] ?: "ученик"} — " +
+                        "${countRu(n, "поощрение", "поощрения", "поощрений")}. " +
+                        "Можно выделить на линейке.",
                 )
             }
 
@@ -144,7 +169,8 @@ object ClassInsightBuilder {
             .maxByOrNull { it.totalNegative }
             ?.let { w ->
                 points.add(
-                    "Напряжённый день — ${WeekdayLabelsRu.titled(w.dayOfWeek)}: ${w.totalNegative} нарушений. " +
+                    "Напряжённый день — ${WeekdayLabelsRu.titled(w.dayOfWeek)}: " +
+                        "${countRu(w.totalNegative, "нарушение", "нарушения", "нарушений")}. " +
                         "Имеет смысл усилить контроль ${WeekdayLabelsRu.inDay(w.dayOfWeek)}.",
                 )
             }
@@ -180,9 +206,16 @@ object ClassInsightBuilder {
                 val pos = dayLogs.count { it.scoreImpact > 0 }
                 val uniqueStudents = dayLogs.map { it.studentId }.distinct().size
                 val summary = when {
-                    neg == 0 && pos > 0 -> "$pos поощрений, $uniqueStudents учеников — хороший день."
-                    neg > 0 && pos == 0 -> "$neg нарушений у $uniqueStudents учеников — день под контролем."
-                    else -> "$pos поощрений, $neg нарушений ($uniqueStudents учеников)."
+                    neg == 0 && pos > 0 ->
+                        "${countRu(pos, "поощрение", "поощрения", "поощрений")}, " +
+                            "${studentsRu(uniqueStudents)} — хороший день."
+                    neg > 0 && pos == 0 ->
+                        "${countRu(neg, "нарушение", "нарушения", "нарушений")} " +
+                            "у ${studentsGenitiveRu(uniqueStudents)} — день под контролем."
+                    else ->
+                        "${countRu(pos, "поощрение", "поощрения", "поощрений")}, " +
+                            "${countRu(neg, "нарушение", "нарушения", "нарушений")} " +
+                            "(${studentsRu(uniqueStudents)})."
                 }
                 StudentDayDetail(
                     epochDay = epochDay,

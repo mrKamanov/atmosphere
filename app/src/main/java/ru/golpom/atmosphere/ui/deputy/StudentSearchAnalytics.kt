@@ -45,6 +45,8 @@ import kotlin.math.abs
 import ru.golpom.atmosphere.data.local.entity.StudentEntity
 import ru.golpom.atmosphere.data.local.model.DailyScore
 import ru.golpom.atmosphere.domain.WeekdayLabelsRu
+import ru.golpom.atmosphere.domain.behaviorTypeLabelRu
+import ru.golpom.atmosphere.domain.countRu
 import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.atmosphereFormatSigned
 import ru.golpom.atmosphere.ui.theme.atmosphereHeatmapColor
@@ -181,13 +183,11 @@ fun WeekdayRiskTable(patterns: List<StudentWeekdayPattern>) {
                         Text("+${row.positiveCount} хорошо", fontSize = 10.sp, color = AtmosphereBrand.Positive)
                     }
                 }
-                val parts = buildList {
-                    if (row.lateCount > 0) add("опозданий ${row.lateCount}")
-                    if (row.unpreparedCount > 0) add("не готов ${row.unpreparedCount}")
-                    if (row.disruptionCount > 0) add("срыв ${row.disruptionCount}")
-                    if (row.gadgetCount > 0) add("гаджет ${row.gadgetCount}")
-                    if (row.fightCount > 0) add("грубость ${row.fightCount}")
-                }
+                val parts = row.negativesByType.entries
+                    .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+                    .map { (type, n) ->
+                        "${behaviorTypeLabelRu(type)} ${countRu(n, "раз", "раза", "раз")}"
+                    }
                 if (parts.isNotEmpty()) {
                     Text(parts.joinToString(" · "), fontSize = 11.sp, color = AtmosphereBrand.Negative)
                 } else if (row.positiveCount > 0) {

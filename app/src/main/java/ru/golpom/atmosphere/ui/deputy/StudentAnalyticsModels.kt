@@ -41,11 +41,8 @@ data class StudentWeekdayPattern(
     val dayOfWeek: Int,
     val dayLabel: String,
     val dayLabelLong: String,
-    val lateCount: Int,
-    val unpreparedCount: Int,
-    val disruptionCount: Int,
-    val gadgetCount: Int,
-    val fightCount: Int,
+    /** Количество негативных отметок по типу: ключ — `behaviorType`, значение — число за день. */
+    val negativesByType: Map<String, Int>,
     val positiveCount: Int,
     val totalNegative: Int,
 ) {

@@ -11,7 +11,10 @@ import java.time.temporal.TemporalAdjusters
 import ru.golpom.atmosphere.data.local.entity.BehaviorLogEntity
 import ru.golpom.atmosphere.data.local.model.DailyScore
 import ru.golpom.atmosphere.domain.WeekdayLabelsRu
+import ru.golpom.atmosphere.domain.RoutineBehaviorTypes
 import ru.golpom.atmosphere.domain.behaviorTypeLabelRu
+import ru.golpom.atmosphere.domain.countRu
+import ru.golpom.atmosphere.domain.studentsRu
 import ru.golpom.atmosphere.ui.lesson.parseSubjectLabel
 import ru.golpom.atmosphere.ui.lesson.subjectTitleGenitive
 import ru.golpom.atmosphere.ui.lesson.subjectTitlePrepositional
@@ -60,11 +63,7 @@ object StudentInsightBuilder {
                 dayOfWeek = dow,
                 dayLabel = WeekdayLabelsRu.short(dow),
                 dayLabelLong = WeekdayLabelsRu.nominative(dow),
-                lateCount = neg.count { it.behaviorType == "late" },
-                unpreparedCount = neg.count { it.behaviorType == "unprepared" },
-                disruptionCount = neg.count { it.behaviorType == "disruption" },
-                gadgetCount = neg.count { it.behaviorType == "gadget" },
-                fightCount = neg.count { it.behaviorType in setOf("fight", "profanity") },
+                negativesByType = neg.groupingBy { it.behaviorType }.eachCount(),
                 positiveCount = dayLogs.count { it.scoreImpact > 0 },
                 totalNegative = neg.size,
             )
@@ -97,12 +96,7 @@ object StudentInsightBuilder {
         counts.entries
             .sortedByDescending { it.value }
             .joinToString(", ") { (type, n) ->
-                val word = when {
-                    n % 10 == 1 && n % 100 != 11 -> "раз"
-                    n % 10 in 2..4 && n % 100 !in 12..14 -> "раза"
-                    else -> "раз"
-                }
-                "${behaviorTypeLabelRu(type)} — $n $word"
+                "${behaviorTypeLabelRu(type)} — ${countRu(n, "раз", "раза", "раз")}"
             }
 
     private fun buildSubjectProblems(negatives: List<BehaviorLogEntity>): List<StudentSubjectInsight> {
@@ -168,7 +162,8 @@ object StudentInsightBuilder {
                 val title = parseSubjectLabel(key).title
                 points.add(
                     "Не готов к урокам: чаще всего по ${subjectTitlePrepositional(title)} " +
-                        "(${list.size} отметок). Обсудить домашние задания и подготовку.",
+                        "(${countRu(list.size, "отметка", "отметки", "отметок")}). " +
+                        "Обсудить домашние задания и подготовку.",
                 )
             }
 
@@ -186,8 +181,22 @@ object StudentInsightBuilder {
             .maxByOrNull { it.value }
             ?.let { (key, n) ->
                 points.add(
-                    "Телефон на уроке: $n раз, в том числе на ${subjectTitlePrepositional(parseSubjectLabel(key).title)}.",
+                    "Телефон на уроке: ${countRu(n, "раз", "раза", "раз")}, " +
+                        "в том числе на ${subjectTitlePrepositional(parseSubjectLabel(key).title)}.",
                 )
+            }
+
+        negatives.filter { it.behaviorType in RoutineBehaviorTypes }
+            .groupingBy { it.behaviorType }
+            .eachCount()
+            .entries
+            .sortedByDescending { it.value }
+            .takeIf { it.isNotEmpty() }
+            ?.let { byType ->
+                val detail = byType.joinToString(", ") { (type, n) ->
+                    "${behaviorTypeLabelRu(type)} — ${countRu(n, "раз", "раза", "раз")}"
+                }
+                points.add("Замечания по поведению: $detail.")
             }
 
         problems.firstOrNull()?.let { p ->
@@ -209,7 +218,7 @@ object StudentInsightBuilder {
                 if (points.none { it.contains(w.dayLabelLong) }) {
                     points.add(
                         "Напряжённый день недели — ${WeekdayLabelsRu.titled(w.dayOfWeek)}: " +
-                            "${w.totalNegative} нарушений за период.",
+                            "${countRu(w.totalNegative, "нарушение", "нарушения", "нарушений")} за период.",
                     )
                 }
             }
@@ -253,9 +262,12 @@ object StudentInsightBuilder {
                 val neg = dayLogs.count { it.scoreImpact < 0 }
                 val pos = dayLogs.count { it.scoreImpact > 0 }
                 val summary = when {
-                    neg == 0 && pos > 0 -> "$pos поощрений за день — спокойный день."
-                    neg > 0 && pos == 0 -> "$neg нарушений — день под вниманием."
-                    else -> "$pos поощрений, $neg нарушений."
+                    neg == 0 && pos > 0 ->
+                        "${countRu(pos, "поощрение", "поощрения", "поощрений")} за день — спокойный день."
+                    neg > 0 && pos == 0 ->
+                        "${countRu(neg, "нарушение", "нарушения", "нарушений")} — день под вниманием."
+                    else -> "${countRu(pos, "поощрение", "поощрения", "поощрений")}, " +
+                        "${countRu(neg, "нарушение", "нарушения", "нарушений")}."
                 }
                 StudentDayDetail(
                     epochDay = epochDay,
