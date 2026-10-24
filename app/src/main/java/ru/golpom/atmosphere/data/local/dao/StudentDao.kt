@@ -57,6 +57,45 @@ interface StudentDao {
     @Query("DELETE FROM students WHERE created_by_import_batch_id = :batchId")
     suspend fun deleteCreatedByImportBatch(batchId: String)
 
+    /** Ученики, созданные отчётом, у которых не осталось ни одной отметки. */
+    @Query(
+        """
+        DELETE FROM students
+        WHERE created_by_import_batch_id = :batchId
+          AND NOT EXISTS (SELECT 1 FROM behavior_logs l WHERE l.student_id = students.student_id)
+        """,
+    )
+    suspend fun deleteCreatedByImportBatchWithoutLogs(batchId: String)
+
+    /**
+     * Оставшихся учеников удалённого отчёта «передаём» другому отчёту, где у них есть отметки.
+     * Если остались только отметки с этого телефона — ученик становится обычным (NULL).
+     */
+    @Query(
+        """
+        UPDATE students SET created_by_import_batch_id = (
+            SELECT l.import_batch_id FROM behavior_logs l
+            WHERE l.student_id = students.student_id
+              AND l.import_batch_id IS NOT NULL
+              AND l.import_batch_id != :batchId
+            LIMIT 1
+        )
+        WHERE created_by_import_batch_id = :batchId
+        """,
+    )
+    suspend fun reassignCreatedByImportBatch(batchId: String)
+
+    /** Ученики от прерванных импортов: отчёта нет, отметок нет. */
+    @Query(
+        """
+        DELETE FROM students
+        WHERE created_by_import_batch_id IS NOT NULL
+          AND created_by_import_batch_id NOT IN (SELECT batch_id FROM import_batches)
+          AND NOT EXISTS (SELECT 1 FROM behavior_logs l WHERE l.student_id = students.student_id)
+        """,
+    )
+    suspend fun deleteOrphanImportedStudents()
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: StudentEntity)
 
@@ -94,8 +133,10 @@ interface StudentDao {
         """
         SELECT * FROM students
         WHERE class_id = :classId
-          AND LOWER(TRIM(last_name)) = LOWER(TRIM(:lastName))
-          AND LOWER(TRIM(first_name)) = LOWER(TRIM(:firstName))
+          AND REPLACE(REPLACE(LOWER(TRIM(last_name)), 'ё', 'е'), 'Ё', 'Е')
+              = REPLACE(REPLACE(LOWER(TRIM(:lastName)), 'ё', 'е'), 'Ё', 'Е')
+          AND REPLACE(REPLACE(LOWER(TRIM(first_name)), 'ё', 'е'), 'Ё', 'Е')
+              = REPLACE(REPLACE(LOWER(TRIM(:firstName)), 'ё', 'е'), 'Ё', 'Е')
         LIMIT 1
         """,
     )

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Class
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Upgrade
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,7 +56,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.golpom.atmosphere.data.local.entity.ClassEntity
+import ru.golpom.atmosphere.data.repository.CatalogRepository
+import ru.golpom.atmosphere.domain.countRu
+import ru.golpom.atmosphere.domain.studentsRu
 import ru.golpom.atmosphere.domain.student.StudentIdentity
+import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 import ru.golpom.atmosphere.ui.theme.CardBg
 import ru.golpom.atmosphere.ui.theme.ChipBg
 import ru.golpom.atmosphere.ui.theme.fabListBottomPadding
@@ -74,6 +79,9 @@ fun ClassesScreen(
 ) {
     val classes by viewModel.classes.collectAsStateWithLifecycle()
     val userMessage by viewModel.userMessage.collectAsStateWithLifecycle()
+    val schoolYearDialog by viewModel.schoolYearDialog.collectAsStateWithLifecycle()
+    val pendingClassDeletion by viewModel.pendingClassDeletion.collectAsStateWithLifecycle()
+    val showSchoolYearHint by viewModel.showSchoolYearHint.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -91,6 +99,25 @@ fun ClassesScreen(
         )
     }
 
+    pendingClassDeletion?.let { impact ->
+        DeleteClassDialog(
+            impact = impact,
+            onConfirm = viewModel::confirmDeleteClass,
+            onDismiss = viewModel::dismissDeleteClass,
+        )
+    }
+
+    schoolYearDialog?.let { state ->
+        SchoolYearRolloverDialog(
+            state = state,
+            onGraduationGradeChange = viewModel::setGraduationGrade,
+            onGraduateActionChange = viewModel::setGraduateAction,
+            onShiftScheduleChange = viewModel::setShiftSchedule,
+            onConfirm = viewModel::confirmSchoolYearRollover,
+            onDismiss = viewModel::dismissSchoolYearDialog,
+        )
+    }
+
     Scaffold(
         containerColor = SurfaceBg,
         topBar = {
@@ -99,6 +126,11 @@ fun ClassesScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = TextPrimary)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = viewModel::openSchoolYearDialog) {
+                        Icon(Icons.Default.Upgrade, contentDescription = "Новый учебный год", tint = LessonGreen)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceBg),
@@ -131,11 +163,16 @@ fun ClassesScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = fabListBottomPadding(),
             ) {
+                if (showSchoolYearHint) {
+                    item(key = "school_year_hint") {
+                        SchoolYearHintCard(onClick = viewModel::openSchoolYearDialog)
+                    }
+                }
                 items(classes, key = { it.classId }) { cls ->
                     ClassCard(
                         cls = cls,
                         onClick = { onOpenClassDetail(cls.classId) },
-                        onDelete = { viewModel.deleteClass(cls.classId) },
+                        onDelete = { viewModel.requestDeleteClass(cls.classId) },
                     )
                 }
             }
@@ -163,6 +200,49 @@ private fun ClassCard(cls: ClassEntity, onClick: () -> Unit, onDelete: () -> Uni
             }
         }
     }
+}
+
+@Composable
+private fun DeleteClassDialog(
+    impact: CatalogRepository.ClassDeletionImpact,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val losses = buildList {
+        if (impact.activeStudents > 0) add(studentsRu(impact.activeStudents))
+        if (impact.archivedStudents > 0) add("${studentsRu(impact.archivedStudents)} из архива")
+        if (impact.behaviorLogs > 0) add(countRu(impact.behaviorLogs, "отметка", "отметки", "отметок"))
+        if (impact.scheduleEntries > 0) add(countRu(impact.scheduleEntries, "урок", "урока", "уроков") + " в расписании")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Удалить класс ${impact.classId}?", fontWeight = FontWeight.SemiBold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (impact.isEmpty) {
+                    Text("Класс пустой: в нём нет учеников, отметок и уроков.")
+                } else {
+                    Text("Вместе с классом навсегда удалятся:")
+                    losses.forEach { Text("•  $it", color = TextPrimary) }
+                    Text(
+                        "Отметки удаляются все, что ставились в этом классе, в том числе прошлогодние. " +
+                            "Если ученики перешли в другой класс, сначала переведите их.",
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Удалить", color = AtmosphereBrand.NegativeDeep, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        },
+    )
 }
 
 @Composable

@@ -316,6 +316,33 @@ private fun StudentCard(
 ) {
     var showMoveDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showOutsideLessonDialog by remember { mutableStateOf(false) }
+
+    if (showOutsideLessonDialog) {
+        AlertDialog(
+            onDismissRequest = { showOutsideLessonDialog = false },
+            title = { Text("Назначить замечание вне урока?", fontWeight = FontWeight.SemiBold) },
+            text = {
+                Text(
+                    "${student.lastName} ${student.firstName}, ${student.classId}. " +
+                        "Будет записано нарушение дисциплины вне урока: −1."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onMarkOutsideLesson()
+                    showOutsideLessonDialog = false
+                }) {
+                    Text("Да")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOutsideLessonDialog = false }) {
+                    Text("Нет")
+                }
+            },
+        )
+    }
 
     if (showMoveDialog) {
         MoveClassDialog(
@@ -395,7 +422,7 @@ private fun StudentCard(
                     Icon(Icons.Default.DeleteForever, contentDescription = "Удалить навсегда", modifier = Modifier.size(20.dp), tint = TextSecondary.copy(alpha = 0.5f))
                 }
             } else {
-                IconButton(onClick = onMarkOutsideLesson) {
+                IconButton(onClick = { showOutsideLessonDialog = true }) {
                     Icon(
                         Icons.Default.ReportProblem,
                         contentDescription = "Отметить нарушение вне урока",

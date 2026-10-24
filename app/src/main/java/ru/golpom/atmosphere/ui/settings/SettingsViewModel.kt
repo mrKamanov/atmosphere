@@ -52,7 +52,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     val lessonRemindersEnabled = preferencesRepository.lessonRemindersEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val systemNotificationsEnabled = preferencesRepository.systemNotificationsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

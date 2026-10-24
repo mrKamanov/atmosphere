@@ -13,6 +13,7 @@ import ru.golpom.atmosphere.data.local.dao.ClassDao
 import ru.golpom.atmosphere.data.local.dao.ImportBatchDao
 import ru.golpom.atmosphere.data.local.dao.MeetingDao
 import ru.golpom.atmosphere.data.local.dao.NotificationDao
+import ru.golpom.atmosphere.data.local.dao.SchoolYearDao
 import ru.golpom.atmosphere.data.local.dao.ScheduleEntryDao
 import ru.golpom.atmosphere.data.local.dao.StudentDao
 import ru.golpom.atmosphere.data.local.entity.BehaviorLogEntity
@@ -46,6 +47,7 @@ abstract class AtmosphereDatabase : RoomDatabase() {
     abstract fun scheduleEntryDao(): ScheduleEntryDao
     abstract fun meetingDao(): MeetingDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun schoolYearDao(): SchoolYearDao
 
     companion object {
         val MIGRATION_3_4 = Migration(3, 4) { db ->

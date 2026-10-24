@@ -119,6 +119,20 @@ interface BehaviorLogDao {
     """)
     suspend fun getScoresByClassAndSubject(classId: String, subjectKey: String): List<StudentSubjectScore>
 
+    /** Сколько своих отметок учитель поставил классу по предмету за промежуток времени. */
+    @Query("""
+        SELECT COUNT(*) FROM behavior_logs
+        WHERE class_id = :classId AND subject_key = :subjectKey
+          AND import_batch_id IS NULL
+          AND timestamp >= :fromMillis AND timestamp < :toMillis
+    """)
+    suspend fun countTeacherLogsInRange(
+        classId: String,
+        subjectKey: String,
+        fromMillis: Long,
+        toMillis: Long,
+    ): Int
+
     @Query("""
         SELECT l.student_id AS studentId, COALESCE(SUM(l.score_impact), 0) AS totalScore
         FROM behavior_logs l
@@ -416,6 +430,16 @@ interface BehaviorLogDao {
 
     @Query("DELETE FROM behavior_logs WHERE import_batch_id = :batchId")
     suspend fun deleteByImportBatchId(batchId: String)
+
+    /** Отметки от импорта, запись об отчёте которого так и не появилась (импорт был прерван). */
+    @Query(
+        """
+        DELETE FROM behavior_logs
+        WHERE import_batch_id IS NOT NULL
+          AND import_batch_id NOT IN (SELECT batch_id FROM import_batches)
+        """,
+    )
+    suspend fun deleteOrphanImportedLogs()
 
     @Query("""
         SELECT * FROM behavior_logs

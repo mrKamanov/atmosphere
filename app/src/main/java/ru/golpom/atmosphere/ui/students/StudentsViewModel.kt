@@ -76,7 +76,7 @@ class StudentsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val id = "${java.time.Year.now().value}-$cls-${System.currentTimeMillis() % 1000}"
+            val id = StudentIdentity.newLocalStudentId()
             catalogRepository.addStudent(id, f, l, cls)
             _userMessage.value = "Ученик $l $f добавлен в $cls"
         }

@@ -263,8 +263,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                 Spacer(Modifier.height(12.dp))
                 SettingsToggle(
                     icon = Icons.Default.School,
-                    title = "Напоминания об уроках",
-                    subtitle = "После завершения урока без отметок",
+                    title = "Урок без отметок",
+                    subtitle = "Напомнить, если за урок по расписанию не поставлено ни одной отметки",
                     checked = lessonReminders,
                     onCheckedChange = { viewModel.setLessonReminders(it) },
                 )
@@ -274,7 +274,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                 SettingsToggle(
                     icon = Icons.Default.Notifications,
                     title = "Системные уведомления",
-                    subtitle = "Показывать, даже когда приложение закрыто",
+                    subtitle = "Дублировать напоминания в шторку уведомлений Android",
                     checked = systemNotifications,
                     onCheckedChange = { enabled ->
                         if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -299,8 +299,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenHelp: () -> Unit = {}) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         "Сформируйте файл с отметками за нужный период. После создания его можно передать завучу " +
-                            "кнопкой «Отправить» или сохранить на телефон. Открывается файл только в «Атмосфера» " +
-                            "на устройстве завуча.",
+                            "кнопкой «Отправить» или сохранить на телефон. Файл открывается в «Атмосфере» у завуча, " +
+                            "обычные программы его не откроют.",
                         fontSize = 12.sp,
                         color = TextSecondary,
                         lineHeight = 17.sp,

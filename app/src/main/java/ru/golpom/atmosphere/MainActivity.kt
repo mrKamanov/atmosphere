@@ -5,6 +5,7 @@
 package ru.golpom.atmosphere
 
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -24,7 +25,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
-        splashScreen.setKeepOnScreenCondition { !contentReady.get() }
+        val splashStartedAt = SystemClock.uptimeMillis()
+        // Страховка: заставка не держится дольше SPLASH_MAX_MS, даже если сигнал «готово» не пришёл.
+        splashScreen.setKeepOnScreenCondition {
+            !contentReady.get() && SystemClock.uptimeMillis() - splashStartedAt < SPLASH_MAX_MS
+        }
         splashScreen.setOnExitAnimationListener { provider ->
             provider.remove()
         }
@@ -43,5 +48,9 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private companion object {
+        const val SPLASH_MAX_MS = 2_000L
     }
 }

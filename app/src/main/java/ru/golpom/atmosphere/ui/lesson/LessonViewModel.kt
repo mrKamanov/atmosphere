@@ -8,17 +8,18 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.golpom.atmosphere.data.csv.BehaviorLogCsvSerializer
 import ru.golpom.atmosphere.data.csv.TeacherBehaviorExportFileName
+import ru.golpom.atmosphere.data.local.model.LessonStudentRow
 import ru.golpom.atmosphere.data.preferences.UserPreferencesRepository
 import ru.golpom.atmosphere.data.repository.CatalogRepository
 import ru.golpom.atmosphere.domain.BehaviorPreset
@@ -30,15 +31,13 @@ class LessonViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
-    val classId: String =
-        URLDecoder.decode(
-            checkNotNull(savedStateHandle.get<String>("classId")),
-            StandardCharsets.UTF_8.name(),
-        )
+    // Navigation уже раскодировал аргументы (см. NavDestinations.lesson).
+    val classId: String = checkNotNull(savedStateHandle.get<String>("classId"))
     val subjectKey: String = checkNotNull(savedStateHandle.get<String>("subjectKey"))
 
-    val rows = catalogRepository.observeLessonRows(classId, subjectKey)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    /** null — список ещё загружается; пустой список — в классе нет учеников. */
+    val rows: StateFlow<List<LessonStudentRow>?> = catalogRepository.observeLessonRows(classId, subjectKey)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun logBehavior(studentId: String, preset: BehaviorPreset) {
         viewModelScope.launch {

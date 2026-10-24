@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Class
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -62,6 +63,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.golpom.atmosphere.data.local.entity.ClassEntity
 import ru.golpom.atmosphere.data.local.entity.MeetingEntity
@@ -95,7 +98,7 @@ fun TeacherHomeScreen(
     val classes by viewModel.classes.collectAsStateWithLifecycle()
     val studentCount by viewModel.studentCount.collectAsStateWithLifecycle()
     val navigateTo by viewModel.navigateTo.collectAsStateWithLifecycle()
-    val nextLesson by viewModel.nextLesson.collectAsStateWithLifecycle()
+    val lessonState by viewModel.lessonState.collectAsStateWithLifecycle()
     val upcomingMeetingCount by viewModel.upcomingMeetingCount.collectAsStateWithLifecycle()
     val nextMeeting by viewModel.nextMeeting.collectAsStateWithLifecycle()
     val totalScore by viewModel.totalScore.collectAsStateWithLifecycle()
@@ -104,6 +107,11 @@ fun TeacherHomeScreen(
     val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
     val gradePromptState by notificationsViewModel.showGradePrompt.collectAsStateWithLifecycle()
     val showNotifications = remember { mutableStateOf(false) }
+    // Проверяем напоминания каждый раз, когда главный экран снова на виду
+    // (возврат с урока, из фона), а не только при первом запуске.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        notificationsViewModel.checkNow()
+    }
     LaunchedEffect(navigateTo) {
         navigateTo?.let { route ->
             onNavigateToHome(route)
@@ -184,7 +192,7 @@ fun TeacherHomeScreen(
                 Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                ScheduleCard(onClick = onOpenSchedule, onOpenLesson = onOpenLesson, nextLesson = nextLesson)
+                ScheduleCard(onClick = onOpenSchedule, onOpenLesson = onOpenLesson, lessonState = lessonState)
                 ClassesCard(classes = classes, onOpenClassDetail = onOpenClassDetail, onOpenClasses = onOpenClasses)
                 StudentsCard(studentCount = studentCount, onOpenStudents = onOpenStudents)
                 MeetingsCard(
@@ -271,36 +279,66 @@ private fun CardTitleRow(
 
 
 @Composable
-private fun ScheduleCard(onClick: () -> Unit, onOpenLesson: (classId: String, subjectKey: String) -> Unit, nextLesson: ScheduleEntryEntity?) {
+private fun ScheduleCard(
+    onClick: () -> Unit,
+    onOpenLesson: (classId: String, subjectKey: String) -> Unit,
+    lessonState: TeacherLessonState,
+) {
+    val current = lessonState.current
     BaseCard(onClick = onClick) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
-                onClick = { nextLesson?.let { onOpenLesson(it.classId, it.subjectKey) } },
+                onClick = { current?.let { onOpenLesson(it.classId, it.subjectKey) } },
+                enabled = current != null,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = LessonGreen, contentColor = CardBg),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LessonGreen,
+                    contentColor = CardBg,
+                    disabledContainerColor = LessonGreen.copy(alpha = 0.25f),
+                    disabledContentColor = CardBg.copy(alpha = 0.6f),
+                ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
             ) {
                 Text("Урок", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextSecondary)
+                Spacer(Modifier.width(8.dp))
+                Text(currentLessonText(lessonState), fontSize = 14.sp, color = TextSecondary)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextSecondary)
                 Spacer(Modifier.width(8.dp))
-                Text(nextLessonText(nextLesson), fontSize = 14.sp, color = TextSecondary)
+                Text(nextLessonText(lessonState.next), fontSize = 14.sp, color = TextSecondary)
             }
         }
     }
 }
 
+private fun currentLessonText(state: TeacherLessonState): String {
+    val current = state.current
+    if (current != null) {
+        val time = "${minutesToTime(current.startTimeMinutes)}–${minutesToTime(current.endTimeMinutes)}"
+        return "Сейчас: ${current.subjectKey}, класс ${current.classId}, $time"
+    }
+    if (state.hasMoreToday) return "Перемена"
+    return if (state.hadLessonsToday) "Уроков сегодня больше нет" else "Уроков сегодня нет"
+}
+
 private fun nextLessonText(lesson: ScheduleEntryEntity?): String {
-    if (lesson == null) return "Нет ближайших уроков"
+    if (lesson == null) return "Следующих уроков нет"
     val now = java.time.ZonedDateTime.now()
-    val currentDay = (now.dayOfWeek.value + 6) % 7 + 1
+    val currentDay = now.dayOfWeek.value
     val prefix = if (lesson.dayOfWeek == currentDay) "сегодня" else dayName(lesson.dayOfWeek)
-    val h = lesson.startTimeMinutes / 60
-    val m = lesson.startTimeMinutes % 60
-    val time = "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}"
-    return "$prefix, $time, ${lesson.subjectKey}, ${lesson.classId}"
+    val time = minutesToTime(lesson.startTimeMinutes)
+    return "Следующий: $prefix, $time, ${lesson.subjectKey}, класс ${lesson.classId}"
+}
+
+private fun minutesToTime(minutes: Int): String {
+    val h = minutes / 60
+    val m = minutes % 60
+    return "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}"
 }
 
 private fun dayName(day: Int): String = when (day) {

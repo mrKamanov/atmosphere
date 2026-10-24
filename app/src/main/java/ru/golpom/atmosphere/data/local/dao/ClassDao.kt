@@ -43,8 +43,28 @@ interface ClassDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(entity: ClassEntity)
 
+    /**
+     * Удаляет класс. Внимание: каскадом (FK) удаляются все ученики класса, включая архив,
+     * и все отметки с этим классом — в том числе прошлогодние отметки учеников,
+     * которые уже перешли в другой класс.
+     */
     @Query("DELETE FROM classes WHERE class_id = :classId")
     suspend fun deleteByClassId(classId: String)
+
+    @Query("SELECT COUNT(*) FROM students WHERE class_id = :classId AND status = 'ACTIVE'")
+    suspend fun countActiveStudents(classId: String): Int
+
+    @Query("SELECT COUNT(*) FROM students WHERE class_id = :classId AND status = 'ARCHIVED'")
+    suspend fun countArchivedStudents(classId: String): Int
+
+    @Query("SELECT COUNT(*) FROM behavior_logs WHERE class_id = :classId")
+    suspend fun countBehaviorLogs(classId: String): Int
+
+    @Query("SELECT COUNT(*) FROM schedule_entries WHERE classId = :classId")
+    suspend fun countScheduleEntries(classId: String): Int
+
+    @Query("DELETE FROM schedule_entries WHERE classId = :classId")
+    suspend fun deleteScheduleEntries(classId: String)
 
     @Query("DELETE FROM classes")
     suspend fun deleteAll()

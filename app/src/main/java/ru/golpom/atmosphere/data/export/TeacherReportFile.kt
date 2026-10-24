@@ -15,6 +15,8 @@ object TeacherReportFile {
         val manifest: ExportManifestDto?,
         val csv: String?,
         val unrecognized: Boolean = false,
+        /** Файл похож на отчёт, но не распаковывается: обрезан при скачивании или повреждён. */
+        val damaged: Boolean = false,
     )
 
     fun seal(manifestJson: String, csvBody: String): ByteArray {
@@ -28,7 +30,8 @@ object TeacherReportFile {
         if (zipBytes == null) {
             return Contents(null, null, unrecognized = true)
         }
-        val inner = TeacherReportZip.unpack(zipBytes)
+        val inner = runCatching { TeacherReportZip.unpack(zipBytes) }.getOrNull()
+            ?: return Contents(null, null, damaged = true)
         return Contents(inner.manifest, inner.csv)
     }
 

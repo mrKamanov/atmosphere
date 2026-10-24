@@ -7,7 +7,6 @@ package ru.golpom.atmosphere.data.repository
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
-import java.time.Year
 import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +21,8 @@ import ru.golpom.atmosphere.data.csv.BehaviorLogImportStats
 import ru.golpom.atmosphere.data.csv.ParsedStudentRow
 import ru.golpom.atmosphere.data.csv.StudentImportSummary
 import ru.golpom.atmosphere.domain.student.StudentIdentity
+import androidx.room.withTransaction
+import ru.golpom.atmosphere.data.local.AtmosphereDatabase
 import ru.golpom.atmosphere.data.local.dao.BehaviorLogDao
 import ru.golpom.atmosphere.data.local.dao.ClassDao
 import ru.golpom.atmosphere.data.local.dao.ImportBatchDao
@@ -48,6 +49,7 @@ import java.nio.charset.StandardCharsets
 
 @Singleton
 class CatalogRepository @Inject constructor(
+    private val database: AtmosphereDatabase,
     private val classDao: ClassDao,
     private val studentDao: StudentDao,
     private val behaviorLogDao: BehaviorLogDao,
@@ -251,15 +253,42 @@ class CatalogRepository @Inject constructor(
         importBatchDao.setEnabled(batchId, enabled)
     }
 
+    /**
+     * Удаление отчёта учителя у завуча.
+     *
+     * Ученик, созданный этим отчётом, мог потом получить отметки из отчётов других учителей.
+     * Раньше он удалялся вместе с отчётом, и каскадом пропадали чужие отметки. Теперь удаляются
+     * только ученики, у которых не осталось отметок; остальные «переходят» к другому отчёту.
+     */
     suspend fun deleteImportBatch(batchId: String) {
-        behaviorLogDao.deleteByImportBatchId(batchId)
-        studentDao.deleteCreatedByImportBatch(batchId)
-        importBatchDao.deleteById(batchId)
+        database.withTransaction {
+            behaviorLogDao.deleteByImportBatchId(batchId)
+            studentDao.deleteCreatedByImportBatchWithoutLogs(batchId)
+            studentDao.reassignCreatedByImportBatch(batchId)
+            importBatchDao.deleteById(batchId)
+        }
+    }
+
+    /**
+     * Импорт отчёта целиком в одной транзакции: либо загружаются все отметки и запись об отчёте,
+     * либо ничего. Заодно убираем «осиротевшие» отметки от прошлых прерванных импортов —
+     * они невидимы в сводке и мешали повторно загрузить тот же файл.
+     */
+    suspend fun importReportBatch(
+        rows: List<BehaviorLogImportRow>,
+        batchId: String,
+        buildBatch: (BehaviorLogImportStats) -> ImportBatchEntity,
+    ): BehaviorLogImportStats = database.withTransaction {
+        behaviorLogDao.deleteOrphanImportedLogs()
+        studentDao.deleteOrphanImportedStudents()
+        val stats = importBehaviorLogs(rows, batchId)
+        importBatchDao.upsert(buildBatch(stats))
+        stats
     }
 
     /**
      * Слияние учеников: только новые `student_id` (IGNORE); класс создаётся при необходимости.
-     * Для строк без ID — ключ `Год-класс-порядковыйНомер` в пределах импорта и текущей БД.
+     * Для строк без ID генерируется новый уникальный id.
      */
     suspend fun mergeStudentsFromParsedRows(
         rows: List<ParsedStudentRow>,
@@ -268,13 +297,12 @@ class CatalogRepository @Inject constructor(
         if (rows.isEmpty()) {
             return StudentImportSummary(0, 0, parseWarningsCount)
         }
-        val seqByClass = mutableMapOf<String, Int>()
         var inserted = 0
         var skippedExisting = 0
         for (row in rows) {
             classDao.insert(ClassEntity(row.classId))
             val id = row.studentId?.takeIf { it.isNotBlank() }
-                ?: nextGeneratedStudentId(seqByClass, row.classId)
+                ?: StudentIdentity.newLocalStudentId()
             val status = if (row.status.uppercase() == "ARCHIVED") "ARCHIVED" else "ACTIVE"
             val entity = StudentEntity(
                 studentId = id,
@@ -378,7 +406,33 @@ class CatalogRepository @Inject constructor(
         if (normalized.isNotBlank()) classDao.insert(ClassEntity(classId = normalized))
     }
 
+    /** Что исчезнет вместе с классом — показываем учителю до удаления. */
+    data class ClassDeletionImpact(
+        val classId: String,
+        val activeStudents: Int,
+        val archivedStudents: Int,
+        val behaviorLogs: Int,
+        val scheduleEntries: Int,
+    ) {
+        val isEmpty: Boolean
+            get() = activeStudents == 0 && archivedStudents == 0 && behaviorLogs == 0 && scheduleEntries == 0
+    }
+
+    suspend fun getClassDeletionImpact(classId: String): ClassDeletionImpact =
+        ClassDeletionImpact(
+            classId = classId,
+            activeStudents = classDao.countActiveStudents(classId),
+            archivedStudents = classDao.countArchivedStudents(classId),
+            behaviorLogs = classDao.countBehaviorLogs(classId),
+            scheduleEntries = classDao.countScheduleEntries(classId),
+        )
+
+    /**
+     * Полное удаление класса: ученики (вместе с архивом) и отметки уходят каскадом,
+     * уроки расписания с этим классом удаляются явно, чтобы не осталось «пустых» уроков.
+     */
     suspend fun deleteClass(classId: String) {
+        classDao.deleteScheduleEntries(classId)
         classDao.deleteByClassId(classId)
     }
 
@@ -471,6 +525,13 @@ class CatalogRepository @Inject constructor(
 
     suspend fun getScoresByClassAndSubject(classId: String, subjectKey: String): List<StudentSubjectScore> =
         behaviorLogDao.getScoresByClassAndSubject(classId, subjectKey)
+
+    suspend fun countTeacherLogsInRange(
+        classId: String,
+        subjectKey: String,
+        fromMillis: Long,
+        toMillis: Long,
+    ): Int = behaviorLogDao.countTeacherLogsInRange(classId, subjectKey, fromMillis, toMillis)
 
     suspend fun getTotalScoresForClass(classId: String): List<StudentSubjectScore> =
         behaviorLogDao.getTotalScoresForClass(classId)
@@ -742,13 +803,4 @@ class CatalogRepository @Inject constructor(
     suspend fun searchStudents(query: String): List<StudentEntity> =
         if (query.isBlank()) emptyList() else studentDao.searchActiveStudents(query)
 
-    private suspend fun nextGeneratedStudentId(
-        seqByClass: MutableMap<String, Int>,
-        classId: String,
-    ): String {
-        val prev = seqByClass[classId] ?: studentDao.countByClass(classId).toInt()
-        val next = prev + 1
-        seqByClass[classId] = next
-        return "${Year.now().value}-$classId-$next"
-    }
 }

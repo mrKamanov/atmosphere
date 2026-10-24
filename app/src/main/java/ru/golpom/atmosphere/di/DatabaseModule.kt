@@ -18,6 +18,7 @@ import ru.golpom.atmosphere.data.local.dao.ClassDao
 import ru.golpom.atmosphere.data.local.dao.ImportBatchDao
 import ru.golpom.atmosphere.data.local.dao.MeetingDao
 import ru.golpom.atmosphere.data.local.dao.NotificationDao
+import ru.golpom.atmosphere.data.local.dao.SchoolYearDao
 import ru.golpom.atmosphere.data.local.dao.ScheduleEntryDao
 import ru.golpom.atmosphere.data.local.dao.StudentDao
 
@@ -60,4 +61,7 @@ object DatabaseModule {
 
     @Provides
     fun provideNotificationDao(db: AtmosphereDatabase): NotificationDao = db.notificationDao()
+
+    @Provides
+    fun provideSchoolYearDao(db: AtmosphereDatabase): SchoolYearDao = db.schoolYearDao()
 }

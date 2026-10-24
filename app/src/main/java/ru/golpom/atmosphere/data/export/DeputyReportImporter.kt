@@ -1,10 +1,12 @@
 /**
- * Импорт зашифрованных отчётов учителя для завуча.
+ * Импорт отчётов учителя (.atmo) для завуча.
  * Data-слой; § экспорт/импорт ТЗ.
  */
 package ru.golpom.atmosphere.data.export
 
+import android.util.Log
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import ru.golpom.atmosphere.data.csv.BehaviorLogCsvParseOutcome
@@ -26,19 +28,40 @@ class DeputyReportImporter @Inject constructor(
     private val catalogRepository: CatalogRepository,
 ) {
 
+    /** Никогда не бросает исключений (кроме отмены корутины): ошибка возвращается в [DeputyImportResult.errorMessage]. */
     suspend fun importFile(
         fileName: String,
         bytes: ByteArray,
-    ): DeputyImportResult {
-        return when {
+    ): DeputyImportResult = try {
+        when {
             TeacherReportFile.isSealed(bytes) || TeacherReportZip.isZip(bytes) ->
                 importReportArchive(fileName, bytes)
             else -> importCsvLegacy(fileName, String(bytes, Charsets.UTF_8))
         }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        Log.e(TAG, "importFile($fileName) failed", error)
+        DeputyImportResult(
+            fileName,
+            null,
+            null,
+            0,
+            "Не удалось загрузить отчёт: ${error.message ?: error.javaClass.simpleName}. Данные не изменились.",
+        )
     }
 
     private suspend fun importReportArchive(fileName: String, bytes: ByteArray): DeputyImportResult {
         val opened = TeacherReportFile.open(bytes)
+        if (opened.damaged) {
+            return DeputyImportResult(
+                fileName,
+                null,
+                null,
+                0,
+                "Файл повреждён (возможно, не до конца скачался). Попросите учителя отправить отчёт ещё раз.",
+            )
+        }
         if (opened.unrecognized) {
             return DeputyImportResult(
                 fileName,
@@ -68,25 +91,25 @@ class DeputyReportImporter @Inject constructor(
             ?: batchId.replace("-", "").take(12)
         val displayName = manifest?.teacher_display_name?.takeIf { it.isNotBlank() }
             ?: lastName
-        val stats = catalogRepository.importBehaviorLogs(parsed.rows, batchId)
-        val batch = ImportBatchEntity(
-            batchId = batchId,
-            teacherProfileId = teacherProfileId,
-            teacherProfileShortId = shortId,
-            teacherLastName = lastName,
-            teacherDisplayName = displayName,
-            sourceFileName = fileName,
-            importedAtMillis = System.currentTimeMillis(),
-            periodLabel = manifest?.period_label ?: "Период не указан",
-            periodFromMillis = manifest?.period_from_millis,
-            periodToMillis = manifest?.period_to_millis,
-            recordsInFile = parsed.rows.size,
-            insertedCount = stats.inserted,
-            skippedDuplicate = stats.skippedDuplicate,
-            skippedUnknownStudent = stats.skippedUnknownStudent,
-            enabled = true,
-        )
-        catalogRepository.upsertImportBatch(batch)
+        val stats = catalogRepository.importReportBatch(parsed.rows, batchId) { stats ->
+            ImportBatchEntity(
+                batchId = batchId,
+                teacherProfileId = teacherProfileId,
+                teacherProfileShortId = shortId,
+                teacherLastName = lastName,
+                teacherDisplayName = displayName,
+                sourceFileName = fileName,
+                importedAtMillis = System.currentTimeMillis(),
+                periodLabel = manifest?.period_label ?: "Период не указан",
+                periodFromMillis = manifest?.period_from_millis,
+                periodToMillis = manifest?.period_to_millis,
+                recordsInFile = parsed.rows.size,
+                insertedCount = stats.inserted,
+                skippedDuplicate = stats.skippedDuplicate,
+                skippedUnknownStudent = stats.skippedUnknownStudent,
+                enabled = true,
+            )
+        }
         return DeputyImportResult(
             label = "$displayName ($shortId)",
             batchId = batchId,
@@ -104,8 +127,7 @@ class DeputyReportImporter @Inject constructor(
                 val batchId = UUID.randomUUID().toString()
                 val lastName = parsedName?.teacherLastName ?: "Учитель"
                 val shortId = parsedName?.teacherProfileShortId ?: batchId.replace("-", "").take(12)
-                val stats = catalogRepository.importBehaviorLogs(outcome.rows, batchId)
-                catalogRepository.upsertImportBatch(
+                val stats = catalogRepository.importReportBatch(outcome.rows, batchId) { stats ->
                     ImportBatchEntity(
                         batchId = batchId,
                         teacherProfileId = batchId,
@@ -122,8 +144,8 @@ class DeputyReportImporter @Inject constructor(
                         skippedDuplicate = stats.skippedDuplicate,
                         skippedUnknownStudent = stats.skippedUnknownStudent,
                         enabled = true,
-                    ),
-                )
+                    )
+                }
                 return DeputyImportResult(
                     label = "$lastName ($shortId)",
                     batchId = batchId,
@@ -132,5 +154,9 @@ class DeputyReportImporter @Inject constructor(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "AtmosphereImport"
     }
 }

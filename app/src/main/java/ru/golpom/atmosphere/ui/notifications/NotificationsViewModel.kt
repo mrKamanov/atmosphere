@@ -18,6 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import ru.golpom.atmosphere.data.local.entity.NotificationEntity
 import ru.golpom.atmosphere.data.notifications.SystemNotificationHelper
 import ru.golpom.atmosphere.data.preferences.UserPreferencesRepository
@@ -44,11 +48,12 @@ class NotificationsViewModel @Inject constructor(
     private val _notificationCreated = MutableStateFlow(false)
     val notificationCreated: StateFlow<Boolean> = _notificationCreated.asStateFlow()
 
+    /** Проверки запускаются при каждом возврате на главный экран — не даём им идти параллельно и плодить дубли. */
+    private val checkMutex = Mutex()
+
     init {
         viewModelScope.launch {
-            catalogRepository.cleanOldNotifications()
-            autoCheckMeetingReminders()
-            autoCheckLessonCompletions()
+            checkMutex.withLock { catalogRepository.cleanOldNotifications() }
         }
     }
 
@@ -66,8 +71,10 @@ class NotificationsViewModel @Inject constructor(
 
     fun checkNow() {
         viewModelScope.launch {
-            autoCheckMeetingReminders()
-            autoCheckLessonCompletions()
+            checkMutex.withLock {
+                autoCheckMeetingReminders()
+                autoCheckLessonCompletions()
+            }
         }
     }
 
@@ -162,11 +169,23 @@ class NotificationsViewModel @Inject constructor(
 
         val existing = catalogRepository.observeNotifications().first()
 
+        val today = now.toLocalDate()
         for (entry in recentlyEnded) {
-            val logs = catalogRepository.getScoresByClassAndSubject(entry.classId, entry.subjectKey)
-            val hasGrades = logs.any { it.totalScore != 0 }
-            if (!hasGrades) {
-                val key = "lesson_nogrades_${entry.id}"
+            // Считаем только отметки за этот урок сегодня (с запасом 15 минут до начала),
+            // а не сумму баллов за всё время: +1 и −1 дают 0, но это всё равно отметки.
+            val lessonStart = today.atStartOfDay(now.zone)
+                .plusMinutes((entry.startTimeMinutes - LESSON_MARKS_GRACE_MINUTES).toLong())
+                .toInstant().toEpochMilli()
+            val marksCount = catalogRepository.countTeacherLogsInRange(
+                classId = entry.classId,
+                subjectKey = entry.subjectKey,
+                fromMillis = lessonStart,
+                toMillis = now.toInstant().toEpochMilli(),
+            )
+            val hasStudents = catalogRepository.observeTeacherActiveByClass(entry.classId).first().isNotEmpty()
+            if (marksCount == 0 && hasStudents) {
+                // Ключ с датой: напоминание по одному уроку может прийти раз в день, а не один раз навсегда.
+                val key = "lesson_nogrades_${entry.id}_$today"
                 if (existing.none { it.relatedId == key }) {
                     val userName = userPreferencesRepository.userName.first()
                     val greeting = if (userName.isNotBlank()) "$userName, " else ""
@@ -177,7 +196,10 @@ class NotificationsViewModel @Inject constructor(
                             body = "${greeting}урок «${entry.subjectKey}» (${entry.classId}) завершён. Поставьте баллы ученикам.",
                             timestampMillis = now.toInstant().toEpochMilli(),
                             relatedId = key,
-                            metadataJson = """{"classId":"${entry.classId}","subjectKey":"${entry.subjectKey}"}""",
+                            metadataJson = buildJsonObject {
+                                put("classId", entry.classId)
+                                put("subjectKey", entry.subjectKey)
+                            }.toString(),
                         ),
                     )
                 }
@@ -205,6 +227,9 @@ class NotificationsViewModel @Inject constructor(
     }
 
     companion object {
+        /** Отметки, поставленные чуть раньше звонка, тоже считаются отметками этого урока. */
+        private const val LESSON_MARKS_GRACE_MINUTES = 15
+
         private fun formatTime(millis: Long): String {
             val zdt = java.time.Instant.ofEpochMilli(millis)
                 .atZone(ZoneId.systemDefault())

@@ -111,11 +111,10 @@ object StudentExcelParser {
         return if (m != null) "${m.groupValues[1]}-${m.groupValues[2].uppercase()}" else t.uppercase()
     }
 
-    fun toEntities(students: List<ParsedStudent>, year: Int = java.time.Year.now().value, seqStart: Int = 0): List<StudentEntity> {
-        val seq = java.util.concurrent.atomic.AtomicInteger(seqStart)
-        return students.mapIndexed { idx, s ->
+    fun toEntities(students: List<ParsedStudent>): List<StudentEntity> {
+        return students.map { s ->
             StudentEntity(
-                studentId = "$year-${s.classId}-${System.currentTimeMillis() % 10000 + idx}",
+                studentId = ru.golpom.atmosphere.domain.student.StudentIdentity.newLocalStudentId(),
                 firstName = s.firstName,
                 lastName = s.lastName,
                 classId = s.classId,

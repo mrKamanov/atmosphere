@@ -30,7 +30,6 @@ import ru.golpom.atmosphere.ui.theme.AtmosphereBrand
 @Composable
 fun DeputyDashboardHeader(
     topPadding: Dp,
-    topEndInset: Dp,
     periodConfig: PeriodConfig,
     onPeriodSelect: (PeriodType) -> Unit,
     modifier: Modifier = Modifier,
@@ -77,7 +76,6 @@ fun DeputyDashboardHeader(
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(
-                Modifier.padding(end = topEndInset),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
@@ -86,6 +84,8 @@ fun DeputyDashboardHeader(
                     fontWeight = FontWeight.Light,
                     color = AtmosphereBrand.OnSky,
                     letterSpacing = 0.5.sp,
+                    maxLines = 1,
+                    softWrap = false,
                 )
                 Text(
                     "Режим завуча",

@@ -5,6 +5,7 @@
 package ru.golpom.atmosphere.domain.student
 
 import java.time.Year
+import java.util.UUID
 
 /**
  * Единый ключ ученика для слияния файлов с разных устройств: класс + ФИО.
@@ -43,6 +44,13 @@ object StudentIdentity {
         val lnSeg = ln.replace(unsafeChars, "_").ifEmpty { "x" }
         return "$year-$c-$lnSeg-$fnSeg"
     }
+
+    /**
+     * Новый id для ученика, созданного на этом устройстве (вручную или из файла).
+     * Случайный UUID: не зависит от года, класса и числа учеников, поэтому не совпадёт
+     * с существующим. Слияние на устройстве завуча идёт по классу + ФИО, а не по id.
+     */
+    fun newLocalStudentId(): String = UUID.randomUUID().toString()
 
     fun namesUsable(firstName: String?, lastName: String?): Boolean =
         !firstName.isNullOrBlank() && !lastName.isNullOrBlank()

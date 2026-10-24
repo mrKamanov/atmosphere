@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
@@ -86,6 +89,7 @@ fun DeputyHomeScreen(
     modifier: Modifier = Modifier,
     onOpenClassDetail: (String) -> Unit = {},
     onOpenStudentProfile: (String) -> Unit = {},
+    onOpenReceive: () -> Unit = {},
 ) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val previous by viewModel.previousStats.collectAsStateWithLifecycle()
@@ -122,6 +126,15 @@ fun DeputyHomeScreen(
 
     val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
+    var firstResume by remember { mutableStateOf(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (firstResume) {
+            firstResume = false
+        } else {
+            viewModel.refresh()
+        }
+    }
+
     LaunchedEffect(navigateTo) {
         navigateTo?.let {
             onNavigateToHome(it)
@@ -145,6 +158,9 @@ fun DeputyHomeScreen(
                 navigationIcon = {},
                 actions = {
                     val iconMod = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.25f))
+                    IconButton(onClick = onOpenReceive, modifier = iconMod) {
+                        Icon(Icons.Default.Wifi, contentDescription = "Приём отчётов по Wi-Fi", tint = TextPrimary)
+                    }
                     IconButton(onClick = { viewModel.toggleRole() }, modifier = iconMod) {
                         Icon(Icons.Default.Person, contentDescription = "Сменить роль", tint = TextPrimary)
                     }
@@ -196,7 +212,6 @@ fun DeputyHomeScreen(
             ) {
             DeputyDashboardHeader(
                 topPadding = padding.calculateTopPadding(),
-                topEndInset = 132.dp,
                 periodConfig = periodConfig,
                 onPeriodSelect = { type ->
                     if (type == PeriodType.CUSTOM) showDateDialog = true else viewModel.setPeriodType(type)

@@ -15,11 +15,14 @@ import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -58,11 +61,25 @@ class TeacherHomeViewModel @Inject constructor(
     private val allMeetings = catalogRepository.observeMeetings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val upcomingMeetingCount = allMeetings
-        .map { list -> list.count { it.dateTimeMillis > System.currentTimeMillis() } }
+    /** Раз в минуту: прошедшее собрание должно само уходить из «ближайших» без перезапуска. */
+    private val meetingsTick = flow {
+        while (true) {
+            emit(Unit)
+            delay(MEETINGS_TICK_MS)
+        }
+    }
+
+    private val upcomingMeetings = combine(allMeetings, meetingsTick) { list, _ ->
+        val now = System.currentTimeMillis()
+        list.filter { it.dateTimeMillis > now }.sortedBy { it.dateTimeMillis }
+    }
+
+    val upcomingMeetingCount = upcomingMeetings
+        .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    val nextMeeting = catalogRepository.observeNextMeeting(System.currentTimeMillis())
+    val nextMeeting = upcomingMeetings
+        .map { it.firstOrNull() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _navigateTo = MutableStateFlow<String?>(null)
@@ -71,9 +88,19 @@ class TeacherHomeViewModel @Inject constructor(
     private val allSchedule = catalogRepository.observeAllSchedule()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val nextLesson = allSchedule
-        .map { entries -> findNextLesson(entries) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    /**
+     * Тик для пересчёта «текущего» урока: состояние должно меняться само,
+     * когда наступает начало или конец урока, даже если расписание не менялось.
+     */
+    private val clockTick = flow {
+        while (true) {
+            emit(Unit)
+            delay(CLOCK_TICK_MS)
+        }
+    }
+
+    val lessonState = combine(allSchedule, clockTick) { entries, _ -> buildLessonState(entries) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TeacherLessonState())
 
     fun consumeUserMessage() {
         _userMessage.value = null
@@ -170,6 +197,28 @@ class TeacherHomeViewModel @Inject constructor(
         }.getOrNull()
     }
 
+    private fun buildLessonState(entries: List<ScheduleEntryEntity>): TeacherLessonState {
+        if (entries.isEmpty()) return TeacherLessonState()
+        val now = java.time.ZonedDateTime.now()
+        val currentMinutes = now.toLocalTime().toSecondOfDay() / 60
+        val todayIso = now.dayOfWeek.value // 1=Пн .. 7=Вс
+
+        val todayEntries = entries
+            .filter { it.dayOfWeek == todayIso }
+            .sortedBy { it.startTimeMinutes }
+        val current = todayEntries.firstOrNull {
+            it.startTimeMinutes <= currentMinutes && it.endTimeMinutes > currentMinutes
+        }
+        val hasMoreToday = todayEntries.any { it.startTimeMinutes > currentMinutes }
+
+        return TeacherLessonState(
+            current = current,
+            next = findNextLesson(entries),
+            hasMoreToday = hasMoreToday,
+            hadLessonsToday = todayEntries.isNotEmpty(),
+        )
+    }
+
     private fun findNextLesson(entries: List<ScheduleEntryEntity>): ScheduleEntryEntity? {
         if (entries.isEmpty()) return null
         val now = java.time.ZonedDateTime.now()
@@ -197,5 +246,7 @@ class TeacherHomeViewModel @Inject constructor(
 
     companion object {
         private const val MAX_BYTES = 4 * 1024 * 1024
+        private const val CLOCK_TICK_MS = 30_000L
+        private const val MEETINGS_TICK_MS = 60_000L
     }
 }

@@ -9,6 +9,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,8 +49,9 @@ class UserPreferencesRepository @Inject constructor(
         prefs[KEY_MEETING_REMINDERS] ?: true
     }
 
+    /** «Урок без отметок»: по умолчанию выключено. */
     val lessonRemindersEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[KEY_LESSON_REMINDERS] ?: true
+        prefs[KEY_LESSON_REMINDERS] ?: false
     }
 
     val systemNotificationsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
@@ -143,6 +145,17 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    /** Когда последний раз переводили классы в новый учебный год (null — ни разу). */
+    val lastSchoolYearRolloverMillis: Flow<Long?> = dataStore.data.map { prefs ->
+        prefs[KEY_LAST_SCHOOL_YEAR_ROLLOVER]
+    }
+
+    suspend fun setLastSchoolYearRolloverMillis(value: Long) {
+        dataStore.edit { prefs ->
+            prefs[KEY_LAST_SCHOOL_YEAR_ROLLOVER] = value
+        }
+    }
+
     companion object {
         /** Длина короткого ID в имени файла экспорта (12 hex ≈ 48 бит). */
         const val TEACHER_PROFILE_SHORT_ID_LEN = 12
@@ -156,5 +169,6 @@ class UserPreferencesRepository @Inject constructor(
         private val KEY_SYSTEM_NOTIFICATIONS = booleanPreferencesKey("system_notifications")
         private val KEY_EXPORT_NEUTRAL_FILENAME = booleanPreferencesKey("export_neutral_filename")
         private val KEY_DEPUTY_LOCAL_DATA = booleanPreferencesKey("deputy_local_data_enabled")
+        private val KEY_LAST_SCHOOL_YEAR_ROLLOVER = longPreferencesKey("last_school_year_rollover_millis")
     }
 }

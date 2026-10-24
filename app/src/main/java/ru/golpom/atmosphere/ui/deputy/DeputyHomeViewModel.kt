@@ -16,7 +16,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,6 +86,21 @@ class DeputyHomeViewModel @Inject constructor(
 
     init {
         refresh()
+        observeImportBatches()
+    }
+
+    /**
+     * Любой импорт (в т.ч. приём по Wi-Fi на другом экране) меняет набор пакетов.
+     * По этому сигналу пересчитываем аналитику, не дожидаясь ручного refresh.
+     */
+    private fun observeImportBatches() {
+        viewModelScope.launch {
+            catalogRepository.observeImportBatches()
+                .map { batches -> batches.map { it.batchId } }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { loadDashboardStats() }
+        }
     }
 
     fun setPeriodType(type: PeriodType) {

@@ -25,8 +25,8 @@ android {
         applicationId = "ru.golpom.atmosphere"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.1.5"
+        versionCode = 7
+        versionName = "0.1.6"
     }
 
     signingConfigs {
@@ -86,6 +86,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.commons.csv)
     implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.client.cio)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

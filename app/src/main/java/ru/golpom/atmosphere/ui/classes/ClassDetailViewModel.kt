@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
@@ -66,13 +67,19 @@ class ClassDetailViewModel @Inject constructor(
         loadScores()
     }
 
+    private var loadScoresJob: Job? = null
+
     private fun loadScores() {
         val cid = _classId.value
         if (cid.isBlank()) return
-        viewModelScope.launch {
+        val subject = _selectedSubject.value
+        // При быстром переключении предметов старый запрос мог закончиться позже нового
+        // и показать баллы не того предмета — отменяем предыдущий.
+        loadScoresJob?.cancel()
+        loadScoresJob = viewModelScope.launch {
             _loading.value = true
-            val result = if (_selectedSubject.value != null) {
-                catalogRepository.getScoresByClassAndSubject(cid, _selectedSubject.value!!)
+            val result = if (subject != null) {
+                catalogRepository.getScoresByClassAndSubject(cid, subject)
                     .associate { it.studentId to it.totalScore }
             } else {
                 catalogRepository.getTotalScoresForClass(cid)

@@ -37,11 +37,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -129,6 +131,11 @@ fun LessonScreen(
                     }
                 },
         ) {
+            val loadedRows = rows
+            if (loadedRows != null && loadedRows.isEmpty()) {
+                EmptyLessonHint(classId = viewModel.classId)
+                return@Box
+            }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
@@ -142,7 +149,7 @@ fun LessonScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(rows, key = { it.studentId }) { row ->
+                items(loadedRows.orEmpty(), key = { it.studentId }) { row ->
                     StudentLessonCard(
                         row = row,
                         onClick = { selected = row },
@@ -167,5 +174,30 @@ fun LessonScreen(
                 onDismiss = { selected = null },
             )
         }
+    }
+}
+
+/** Пустой урок: чаще всего класс в расписании записан не так, как класс учеников. */
+@Composable
+private fun EmptyLessonHint(classId: String) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "В классе $classId нет учеников",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            "Добавьте учеников в «Мои ученики» или проверьте, что класс в расписании " +
+                "называется так же, как класс учеников (например, «9-Л», а не «9Л»).",
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondary,
+            textAlign = TextAlign.Center,
+        )
     }
 }

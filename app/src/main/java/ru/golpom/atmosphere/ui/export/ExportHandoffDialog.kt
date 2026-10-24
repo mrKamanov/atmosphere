@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -46,6 +47,7 @@ fun ExportHandoffDialog(
     recordsLine: String? = null,
     hintText: String? = null,
     onSavePdf: (() -> Unit)? = null,
+    onSendLan: (() -> Unit)? = null,
     saveLabel: String = "Сохранить",
     savePdfLabel: String = "PDF",
 ) {
@@ -88,7 +90,8 @@ fun ExportHandoffDialog(
                 )
                 if (payload.appSealed) {
                     Text(
-                        "Открывается только в «Атмосфера» на устройстве завуча.",
+                        "Файл открывается в «Атмосфере» у завуча; обычные программы его не откроют. " +
+                            "Это не полноценная защита: отправляйте отчёт только завучу.",
                         fontSize = 12.sp,
                         color = TextSecondary,
                         lineHeight = 17.sp,
@@ -146,6 +149,24 @@ fun ExportHandoffDialog(
                         )
                         Text(
                             "Отправить",
+                            modifier = Modifier.padding(start = 8.dp),
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+
+                if (onSendLan != null) {
+                    OutlinedButton(
+                        onClick = onSendLan,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            Icons.Default.Wifi,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            "Отправить завучу по Wi-Fi",
                             modifier = Modifier.padding(start = 8.dp),
                             fontWeight = FontWeight.Medium,
                         )
